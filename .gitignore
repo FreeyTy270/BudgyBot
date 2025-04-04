@@ -1,5 +1,5 @@
 # BudgyBot custom ignores
-bank_exports/**
+**bank_exports/**
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm
@@ -242,7 +242,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venvs
 env/
+venvs/
 venv/
 ENV/
 env.bak/
