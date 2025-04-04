@@ -1,12 +1,35 @@
 """This file defines the program interface to the sqlite database"""
 
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Session
 
-from budgybot.statement_models.chase import ChaseCheckingEntry
+from budgybot.statement_models import ChaseCheckingEntry
+from budgybot.records_models import BankEntry
 
 
+class RecordsKeeper:
+    def __init__(self, engine):
+        self.engine = engine
 
-def create_records_keeper(db_engine) -> None:
+    def add_single(self, item: BankEntry):
+        with Session(self.engine) as session:
+            session.add(item)
+            session.commit()
+            session.refresh(item)
 
-    SQLModel.metadata.create_all(bind=db_engine)
+    def add_multi(self, items: list[BankEntry]):
+        with Session(self.engine) as session:
+            session.add_all(items)
+            session.commit()
+
+    def remove(self, item: BankEntry):
+        with Session(self.engine) as session:
+            session.delete(item)
+            session.commit()
+
+    def remove_multi(self, items: list[BankEntry]):
+        with Session(self.engine) as session:
+            for item in items:
+                session.delete(item)
+
+            session.commit()
 

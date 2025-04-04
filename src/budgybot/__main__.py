@@ -1,40 +1,23 @@
-import csv
-import json
+
 import logging
 from pathlib import Path
 
-from budgybot.statement_models import ChaseCheckingEntry
+from sqlmodel import create_engine, SQLModel
 
-# from bank_entry import BankEntry, EntryType
+from budgybot.csv_data import consume_file
+from budgybot.records_keeper import RecordsKeeper
 
 log = logging.getLogger(__name__)
 
 cwd = Path(__file__).parent
 
+def main():
+    sql_db = "sqlite:///budgybot.db"
+    printing_press = create_engine(sql_db)
+    SQLModel.metadata.create_all(bind=printing_press)
 
-def consume_file(file: Path) -> list:
-    """Reads data in from a csv file located at the Path specified by ``file``. Also
-    updates the data held in the consumed file db.
+    scribe = RecordsKeeper(printing_press)
 
-    :param file: Path to the csv file.
-    :return: A list of BankEntry objects.
-    """
-    csv_consumed = []
-
-    with open(file, "r") as f:
-        csv_reader = csv.DictReader(f)
-        for row in csv_reader:
-            if None in row.keys():
-                row.pop(None)
-            new_entry = ChaseCheckingEntry(**row)
-            csv_consumed.append(new_entry)
-
-    with open(read_file_db, "w+") as f:
-        read_files = json.load(f)
-        read_files["those_consumed"].append(file.stem)
-        json.dump(read_files, f, indent=4)
-
-    return csv_consumed
 
 
 if __name__ == "__main__":

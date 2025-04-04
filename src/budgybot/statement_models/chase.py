@@ -7,10 +7,12 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
+from budgybot.statement_models.abc import AbstractEntry
+from budgybot.records_models import BankEntry
 from budgybot.utils.helper_enums import ChaseDebitEntryType, ChaseCreditEntryType, ChaseCreditCategory
 
 
-class ChaseCheckingEntry(BaseModel):
+class ChaseCheckingEntry(BaseModel, AbstractEntry):
     details: Annotated[str, Field(alias="Details")]
     posting_date: Annotated[datetime, Field(alias="Posting Date")]
     description: Annotated[str, Field(alias="Description")]
@@ -44,8 +46,16 @@ class ChaseCheckingEntry(BaseModel):
 
         return balance
 
+    def map_to_bank_entry(self) -> BankEntry:
+        just_the_bits = self.model_dump(exclude={
+            'check_num',
+            'balance',
+        })
 
-class ChaseCreditEntry(BaseModel):
+        return BankEntry(**just_the_bits)
+  
+
+class ChaseCreditEntry(BaseModel, AbstractEntry):
     transaction_date: Annotated[datetime, Field(alias="Transaction Date")]
     posting_date: Annotated[datetime, Field(alias="Posting Date")]
     description: Annotated[str, Field(alias="Description")]
@@ -60,3 +70,11 @@ class ChaseCreditEntry(BaseModel):
             category = ChaseCreditCategory.UNDEFINED
 
         return category
+
+    def map_to_bank_entry(self) -> BankEntry:
+        just_the_bits = self.model_dump(exclude={
+            'transaction_date',
+            'category',
+            'memo'})
+
+        return BankEntry(**just_the_bits)
