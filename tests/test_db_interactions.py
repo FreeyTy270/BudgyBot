@@ -1,10 +1,11 @@
 from sqlmodel import Session, select
 
+from budgybot.csv_data import consume_file
 from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
 
 
 def test_make_an_entry(hire_scribe):
-    house = Room(name="Test House")
+    entry_list = consume_file()
 
     hire_scribe.add_single(house)
 
@@ -24,6 +25,3 @@ def test_demolition_team(hire_scribe, buy_manufactured):
         ).one_or_none()
 
     assert not result
-
-
-

@@ -28,4 +28,3 @@ def create_db_engine(reset_db):
 @pytest.fixture(scope="session")
 def hire_scribe(create_db_engine):
     yield RecordsKeeper(create_db_engine)
-

@@ -32,4 +32,3 @@ class RecordsKeeper:
                 session.delete(item)
 
             session.commit()
-

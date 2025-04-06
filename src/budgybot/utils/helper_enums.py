@@ -1,5 +1,5 @@
-
 from enum import Enum, auto
+
 
 class RecordEntry(Enum):
     UNDEFINED = auto()
@@ -29,6 +29,7 @@ class ChaseCreditEntryType(Enum):
     ADJUSTMENT = auto()
     FEE = auto()
     PAYMENT = auto()
+    RETURN = auto()
     SALE = auto()
 
 
