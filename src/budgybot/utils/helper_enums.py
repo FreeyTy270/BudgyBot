@@ -26,6 +26,7 @@ class ChaseDebitEntryType(StrEnum):
 
 
 class ChaseCreditEntryType(StrEnum):
+    UNDEFINED = auto()
     ADJUSTMENT = auto()
     FEE = auto()
     PAYMENT = auto()
@@ -39,7 +40,7 @@ class ChaseCreditCategory(StrEnum):
     BILLS_UTILITIES = auto()
     ENTERTAINMENT = auto()
     FEES_ADJUSTMENTS = auto()
-    FOOD_DRINKS = auto()
+    FOOD_DRINK = auto()
     GAS = auto()
     GIFTS_DONATIONS = auto()
     GROCERIES = auto()

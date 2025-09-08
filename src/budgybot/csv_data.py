@@ -59,7 +59,8 @@ def consume_file(file: Path) -> list[AbstractEntry]:
                 new_entry = entrytype(**row)
                 csv_consumed.append(new_entry)
             except ValidationError as e:
-                log.error(f"Object {entrytype} is not complete or properly formatted")
+                log.error(f"Object {entrytype} is not complete or properly formatted\n{e}")
+                raise
 
 
     return csv_consumed

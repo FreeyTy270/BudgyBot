@@ -15,10 +15,12 @@ def reset_db():
     if test_db.exists():
         test_db.unlink()
 
+    return test_db
+
 
 @pytest.fixture(scope="session")
 def create_db_engine(reset_db):
-    sql_path = "sqlite:///tests/test.db"
+    sql_path = f"sqlite:///{str(reset_db)}"
     test_engine = create_engine(sql_path)
     SQLModel.metadata.create_all(test_engine)
 
