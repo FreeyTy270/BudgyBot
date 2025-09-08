@@ -6,15 +6,26 @@ from sqlmodel import Session, select
 from budgybot.csv_data import consume_file
 from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
 
+
 @pytest.mark.dependency()
 def test_get_data_into_db(hire_scribe):
     in_here = Path(__file__).parent
     archives = Path(in_here, "archives")
-    for file in archives.glob("*.csv"):
+    an_entry = None
+    test_entry = None
+    for file in archives.glob("*.csv", case_sensitive=False):
         the_entries = consume_file(file)
-        for entry in the_entries:
-            entry.map_to_bank_entry()
+        for i, entry in enumerate(the_entries):
+            the_entries[i] = entry.map_to_bank_entry()
 
+        entry_copies = the_entries.copy()
+        an_entry = the_entries.pop()
+
+        hire_scribe.add_multi(the_entries)
+        hire_scribe.add_single(an_entry)
+
+    assert an_entry.description == entry_copies[-1].description
+    assert the_entries[0].description == entry_copies[0].description
 
 
 @pytest.mark.dependency(depends=["test_get_data_into_db"])
