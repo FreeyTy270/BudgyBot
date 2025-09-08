@@ -1,7 +1,7 @@
-from enum import Enum, auto
+from enum import StrEnum, auto
 
 
-class RecordEntry(Enum):
+class RecordEntry(StrEnum):
     UNDEFINED = auto()
     PAYCHECK = auto()
     DEBIT_EXPENSE = auto()
@@ -11,7 +11,7 @@ class RecordEntry(Enum):
     RECURRING_YEARLY = auto()
 
 
-class ChaseDebitEntryType(Enum):
+class ChaseDebitEntryType(StrEnum):
     ACCT_XFER = auto()
     ACH_CREDIT = auto()
     ACH_DEBIT = auto()
@@ -25,7 +25,7 @@ class ChaseDebitEntryType(Enum):
     MISC_CREDIT = auto()
 
 
-class ChaseCreditEntryType(Enum):
+class ChaseCreditEntryType(StrEnum):
     ADJUSTMENT = auto()
     FEE = auto()
     PAYMENT = auto()
@@ -33,7 +33,7 @@ class ChaseCreditEntryType(Enum):
     SALE = auto()
 
 
-class ChaseCreditCategory(Enum):
+class ChaseCreditCategory(StrEnum):
     UNDEFINED = auto()
     AUTOMOTIVE = auto()
     BILLS_UTILITIES = auto()
@@ -51,7 +51,7 @@ class ChaseCreditCategory(Enum):
     TRAVEL = auto()
 
 
-class DiscoverCreditCategory(Enum):
+class DiscoverCreditCategory(StrEnum):
     UNDEFINED = auto()
     SERVICES = auto()
     PAYMENTS = auto()

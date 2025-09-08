@@ -5,7 +5,8 @@ from decimal import Decimal
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic.dataclasses import dataclass
 
 from budgybot.statement_models.abc import AbstractEntry
 from budgybot.records_models import BankEntry
@@ -21,15 +22,19 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
     """Pydantic model of a single row from a Chase Checking Account csv archive."""
 
     details: Annotated[str, Field(alias="Details")]
-    posting_date: Annotated[datetime, Field(alias="Posting Date", init_var=True)]
-    transaction_date: Annotated[datetime, Field(alias="Transaction Date", init=False)]
+    posting_date: Annotated[datetime, Field(alias="Posting Date")]
     description: Annotated[str, Field(alias="Description")]
     amount: Annotated[Decimal, Field(alias="Amount")]
     transaction_type: Annotated[ChaseDebitEntryType, Field(alias="Type")]
     balance: Annotated[Decimal | None, Field(alias="Balance")]
     check_num: Annotated[int | None, Field(alias="Check or Slip #", default=None)]
 
-    @field_validator("posting_date", "transaction_date", mode="before")
+    @computed_field
+    @property
+    def transaction_date(self) ->datetime:
+        return self.posting_date
+
+    @field_validator("posting_date", mode="before")
     @classmethod
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
@@ -43,7 +48,8 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
     def transaction_type_validator(cls, transaction_type):
         """Converts string representation of type into CDET enum instance."""
         if not isinstance(transaction_type, ChaseDebitEntryType):
-            transaction_type = ChaseDebitEntryType[transaction_type]
+
+            transaction_type = ChaseDebitEntryType[transaction_type.upper()]
 
         return transaction_type
 
@@ -58,14 +64,11 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
 
         return balance
 
-    def model_post_init(self, posting_date: datetime):
-        """Sets the transaction date as the posting date for an easier conversion to
-        ``BankEntry`` object before saving to the db."""
-        self.transaction_date = posting_date
 
     def map_to_bank_entry(self) -> BankEntry:
         """Dumps the model into a dictionary form containing only the fields found in
         ``BankEntry`` object and then returns a BankEntry instance."""
+
         just_the_bits = self.model_dump(
             exclude={
                 "check_num",
@@ -73,12 +76,15 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
             }
         )
 
+        just_the_bits["transaction_type"] = self.transaction_type.value
+
         return BankEntry(**just_the_bits)
 
 
 # noinspection PyNestedDecorators
 class ChaseCreditEntry(BaseModel, AbstractEntry):
     """Pydantic model of a single row from a Chase Credit Card Account csv archive."""
+
     transaction_date: Annotated[datetime, Field(alias="Transaction Date")]
     transaction_type: Annotated[ChaseCreditEntryType, Field(alias="Type")]
     posting_date: Annotated[datetime, Field(alias="Posting Date")]
@@ -92,12 +98,16 @@ class ChaseCreditEntry(BaseModel, AbstractEntry):
     def category_validator(cls, category):
         if not category:
             category = ChaseCreditCategory.UNDEFINED
+        elif not isinstance(category, ChaseCreditCategory):
+            category = ChaseCreditCategory[category.upper()]
 
         return category
 
     def map_to_bank_entry(self) -> BankEntry:
         just_the_bits = self.model_dump(
-            exclude={"transaction_type", "posting_date", "category", "memo"}
+            exclude={"posting_date", "category", "memo"}
         )
+
+        just_the_bits["transaction_type"] = self.transaction_type.value
 
         return BankEntry(**just_the_bits)
