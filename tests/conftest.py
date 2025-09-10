@@ -4,13 +4,14 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, create_engine
 
-from budgybot.records_keeper import RecordsKeeper
+from budgybot import records
 from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
 
 
+cwd = Path(__file__).parent
+
 @pytest.fixture(scope="session")
 def reset_db():
-    cwd = Path(__file__).parent
     test_db = Path(cwd, "test.db")
     if test_db.exists():
         test_db.unlink()
@@ -26,7 +27,10 @@ def create_db_engine(reset_db):
 
     yield test_engine
 
+    test_engine.dispose()
 
-@pytest.fixture(scope="session")
-def hire_scribe(create_db_engine):
-    yield RecordsKeeper(create_db_engine)
+
+def pytest_generate_tests(metafunc):
+    if "file" in metafunc.fixturenames:
+        archives = cwd / "archives"
+        metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))
