@@ -2,13 +2,13 @@
 
 import re
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, date
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator, computed_field
 from pydantic.dataclasses import dataclass
 
-from budgybot.statement_models.abc import AbstractEntry
+from budgybot.statement_models.abc import AbstractStatementEntry
 from budgybot.records_models import BankEntry
 from budgybot.utils.helper_enums import (
     ChaseDebitEntryType,
@@ -18,11 +18,11 @@ from budgybot.utils.helper_enums import (
 
 
 # noinspection PyNestedDecorators
-class ChaseCheckingEntry(BaseModel, AbstractEntry):
+class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
     """Pydantic model of a single row from a Chase Checking Account csv archive."""
 
     details: Annotated[str, Field(alias="Details")]
-    posting_date: Annotated[datetime, Field(alias="Posting Date")]
+    posting_date: Annotated[date, Field(alias="Posting Date")]
     description: Annotated[str, Field(alias="Description")]
     amount: Annotated[Decimal, Field(alias="Amount")]
     transaction_type: Annotated[ChaseDebitEntryType, Field(alias="Type")]
@@ -31,7 +31,7 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
 
     @computed_field
     @property
-    def transaction_date(self) ->datetime:
+    def transaction_date(self) -> date:
         return self.posting_date
 
     @field_validator("posting_date", mode="before")
@@ -39,7 +39,7 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
         if not isinstance(tx_date, datetime):
-            tx_date = datetime.strptime(tx_date, "%m/%d/%Y")
+            tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
         return tx_date
 
@@ -91,7 +91,7 @@ class ChaseCheckingEntry(BaseModel, AbstractEntry):
 
 
 # noinspection PyNestedDecorators
-class ChaseCreditEntry(BaseModel, AbstractEntry):
+class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
     """Pydantic model of a single row from a Chase Credit Card Account csv archive."""
 
     transaction_date: Annotated[datetime, Field(alias="Transaction Date")]

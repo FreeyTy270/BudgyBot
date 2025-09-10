@@ -13,7 +13,6 @@ dependencies = [
     "sqlmodel (>=0.0.24,<0.0.25)"
 ]
 
-
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
@@ -23,6 +22,13 @@ dev = [
     "pytest>=8.4.2",
 ]
 
-
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-v"
+log_cli = true
+testpaths = [
+    "tests",
+    "integration",
+]
 
 

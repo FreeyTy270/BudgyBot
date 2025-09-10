@@ -1,21 +1,21 @@
 """Defines the dataclass models (Pydantic) for Discover banking statements"""
 
 from decimal import Decimal
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
-from budgybot.statement_models.abc import AbstractEntry
+from budgybot.statement_models.abc import AbstractStatementEntry
 from budgybot.records_models import BankEntry
 from budgybot.utils.helper_enums import DiscoverCreditCategory
 
 
-class DiscoverCreditEntry(BaseModel, AbstractEntry):
+class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
     """Pydantic model of a single row from a Discover Credit Card Account csv archive."""
 
-    transaction_date: Annotated[datetime, Field(alias="Trans. Date")]
-    posting_date: Annotated[datetime, Field(alias="Post Date")]
+    transaction_date: Annotated[date, Field(alias="Trans. Date")]
+    posting_date: Annotated[date, Field(alias="Post Date")]
     description: Annotated[str, Field(alias="Description")]
     amount: Annotated[Decimal, Field(alias="Amount")]
     category: Annotated[DiscoverCreditCategory, Field(alias="Category")]
@@ -24,8 +24,8 @@ class DiscoverCreditEntry(BaseModel, AbstractEntry):
     @classmethod
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
-        if not isinstance(tx_date, datetime):
-            tx_date = datetime.strptime(tx_date, "%m/%d/%Y")
+        if not isinstance(tx_date, date):
+            tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
         return tx_date
 

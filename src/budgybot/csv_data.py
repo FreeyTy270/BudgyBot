@@ -1,25 +1,28 @@
 import logging
 from csv import DictReader
 from pathlib import Path
+from builtins import type
 
+from sqlalchemy import Engine
 from sqlmodel import Session, select
 
-from budgybot.records_keeper import RecordsKeeper
-from budgybot.records_models import BankEntry, ConsumedStatements
-from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
-from budgybot.statement_models.abc import AbstractEntry
-from budgybot.statement_models.discover import DiscoverCreditEntry
 from pydantic_core._pydantic_core import ValidationError
+
+from budgybot import records
+from budgybot.records_models import ConsumedStatement
+from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
+from budgybot.statement_models.abc import AbstractStatementEntry
+from budgybot.statement_models.discover import DiscoverCreditEntry
 
 log = logging.getLogger(__name__)
 archives = Path(__file__).parent.parent / "bank_exports"
 
 
-def find_data(keeper: RecordsKeeper) -> list[Path]:
+def find_data(engine: Engine) -> list[Path]:
     new_archives = list()
     all_archives = archives.glob("*.csv", case_sensitive=False)
-    with Session() as session:
-        files = session.exec(select(ConsumedStatements)).all()
+    with Session(engine) as session:
+        files = session.exec(select(ConsumedStatement)).all()
 
     for file in files:
         if file not in all_archives:
@@ -28,10 +31,11 @@ def find_data(keeper: RecordsKeeper) -> list[Path]:
     return new_archives
 
 
-def consume_file(file: Path) -> list[AbstractEntry]:
+def consume_file(engine: Engine, file: Path) -> list[type[AbstractStatementEntry]]:
     """Reads data in from a csv file located at the Path specified by ``file``. Also
     updates the data held in the consumed file db.
 
+    :param engine: SQLAlchemy engine instance
     :param file: Path to the csv file.
     :return: A list of BankEntry objects.
     """
@@ -62,5 +66,7 @@ def consume_file(file: Path) -> list[AbstractEntry]:
                 log.error(f"Object {entrytype} is not complete or properly formatted\n{e}")
                 raise
 
+    file_consumed = ConsumedStatement(file_name=file.stem)
+    records.add_single(engine, file_consumed)
 
     return csv_consumed
