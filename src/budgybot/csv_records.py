@@ -14,24 +14,28 @@ from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
 from budgybot.statement_models.abc import AbstractStatementEntry
 from budgybot.statement_models.discover import DiscoverCreditEntry
 
-log = logging.getLogger(__name__)
-archives = Path(__file__).parent.parent / "bank_exports"
+log = logging.getLogger()
 
 
-def find_data(engine: Engine) -> list[Path]:
-    new_archives = list()
-    all_archives = archives.glob("*.csv", case_sensitive=False)
+def find_records(engine: Engine, archive_dir: Path) -> list[Path]:
+    """Uses a glob pattern to find records in ``archive_dir``. Returns a list of
+    file paths that have not already been consumed.
+
+    :param engine: The SQLAlchemy engine to use to find records.
+    :param archive_dir: The directory to search for records in.
+    :return: A list of file paths that have not already been consumed.
+    """
+
     with Session(engine) as session:
-        files = session.exec(select(ConsumedStatement)).all()
+        records_consumed = session.exec(select(ConsumedStatement.file_name)).all()
 
-    for file in files:
-        if file not in all_archives:
-            new_archives.append(file)
+    records_in_archive = archive_dir.glob("*.csv", case_sensitive=False)
 
-    return new_archives
+    return [record for record in records_in_archive if record.stem not in
+            records_consumed]
 
 
-def consume_file(engine: Engine, file: Path) -> list[type[AbstractStatementEntry]]:
+def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatementEntry]]:
     """Reads data in from a csv file located at the Path specified by ``file``. Also
     updates the data held in the consumed file db.
 
@@ -60,6 +64,7 @@ def consume_file(engine: Engine, file: Path) -> list[type[AbstractStatementEntry
                 row.pop(None)
 
             try:
+                row["file_name"] = file.stem
                 new_entry = entrytype(**row)
                 csv_consumed.append(new_entry)
             except ValidationError as e:
@@ -70,3 +75,19 @@ def consume_file(engine: Engine, file: Path) -> list[type[AbstractStatementEntry
     records.add_single(engine, file_consumed)
 
     return csv_consumed
+
+def loop_and_consume(engine, list_o_records: list[Path]) -> None:
+    """Loops through a list of records (``list_o_records``) and consumes them into
+    the db.
+    :param engine: SQLAlchemy engine instance
+    :param list_o_records: List of records to consume.
+    """
+
+    for record in list_o_records:
+        record_entries = consume_csv_record(engine, record)
+        for i, entry in enumerate(record_entries):
+            record_entries[i] = entry.map_to_bank_entry()
+
+    records.add_multi(engine, sorted(record_entries, key=lambda e:
+    e.transaction_date))
+

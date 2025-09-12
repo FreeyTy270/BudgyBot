@@ -1,11 +1,13 @@
 """This file defines the program interface to the sqlite database"""
 
 import logging
+from typing import Sequence, TYPE_CHECKING
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, Select
 from sqlmodel import SQLModel, Session
+from sqlmodel.sql._expression_select_cls import _T
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 def add_single(engine: Engine, item: type[SQLModel]) -> None:
@@ -42,3 +44,40 @@ def remove_multi(engine: Engine, items: list[type[SQLModel]]):
 
         session.commit()
         log.debug("Multiple items removed from records")
+
+def fetch(engine: Engine, select_stmt: Select, size: int = 0) -> Sequence[_T]:
+    """Fetches ``size`` records from the database. If ``size`` is left at ``0`` the
+    function will return all records.
+
+        :param engine: The database engine to use.
+        :param select_stmt: The select statement to execute.
+        :param size: The number of records to fetch. Defaults to 0.
+        :returns: A list of records.
+    """
+
+    with Session(engine) as session:
+        records_result = session.exec(select_stmt)
+        if size > 0:
+            records = records_result.fetchmany(size=size)
+        else:
+            records = records_result.fetchall()
+
+    return records
+
+def fetch_one(engine: Engine, select_stmt: Select, okay_if_none: bool = True) -> _T:
+    """Fetches a single record from the database.
+
+        :param engine: The database engine to use.
+        :param select_stmt: The select statement to execute.
+        :param okay_if_none: If ``True``, fetches using ``one_or_none()`` allowing for
+        the fetch to return ``None`` without throwing an exception. Defaults to ``True``.
+        :return: The fetched record or ``None``.
+    """
+
+    with Session(engine) as session:
+        if okay_if_none:
+            record = session.exec(select_stmt).one_or_none()
+        else:
+            record = session.exec(select_stmt).one()
+
+    return record

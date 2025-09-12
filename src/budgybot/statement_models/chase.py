@@ -6,7 +6,6 @@ from datetime import datetime, date
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator, computed_field
-from pydantic.dataclasses import dataclass
 
 from budgybot.statement_models.abc import AbstractStatementEntry
 from budgybot.records_models import BankEntry
@@ -28,6 +27,7 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
     transaction_type: Annotated[ChaseDebitEntryType, Field(alias="Type")]
     balance: Annotated[Decimal | None, Field(alias="Balance")]
     check_num: Annotated[int | None, Field(alias="Check or Slip #", default=None)]
+    file_name: str
 
     @computed_field
     @property
@@ -101,6 +101,7 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
     category: Annotated[ChaseCreditCategory, Field(alias="Category")]
     amount: Annotated[Decimal, Field(alias="Amount")]
     memo: Annotated[str | None, Field(alias="Memo")]
+    file_name: str
 
     @field_validator("category", mode="before")
     @classmethod

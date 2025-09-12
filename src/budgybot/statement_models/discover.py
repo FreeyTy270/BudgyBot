@@ -19,6 +19,7 @@ class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
     description: Annotated[str, Field(alias="Description")]
     amount: Annotated[Decimal, Field(alias="Amount")]
     category: Annotated[DiscoverCreditCategory, Field(alias="Category")]
+    file_name: str
 
     @field_validator("posting_date", "transaction_date", mode="before")
     @classmethod

@@ -1,30 +1,23 @@
 import logging
-from pathlib import Path
 
 from sqlmodel import create_engine, SQLModel
 
-from budgybot import records
-from budgybot.csv_data import find_data, consume_file
+from budgybot.configurator import SysConf, get_config
+from budgybot.csv_records import find_records, loop_and_consume
 
-log = logging.getLogger(__name__)
-
-cwd = Path(__file__).parent
+log = logging.getLogger()
 
 
-def main():
-    sql_db = "sqlite:///budgybot.db"
+def main(conf: SysConf) -> None:
+    sql_db = f"sqlite:///{str(conf.ledger_dir / conf.ledger_name)}.db"
     printing_press = create_engine(sql_db)
     SQLModel.metadata.create_all(bind=printing_press)
 
-    unread_data = find_data(printing_press)
+    unread_data = find_records(printing_press)
+    loop_and_consume(printing_press, unread_data)
 
-    for file in unread_data:
-        x = consume_file(file)
-        for i, entry in enumerate(x):
-            x[i] = entry.map_to_bank_entry()
-
-        records.add_multi(printing_press, sorted(x, key=lambda e: e.transaction_date))
 
 
 if __name__ == "__main__":
-    main()
+    sys_conf = get_config()
+    main(sys_conf)
