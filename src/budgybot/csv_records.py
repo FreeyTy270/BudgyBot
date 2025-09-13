@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 from pydantic_core._pydantic_core import ValidationError
 
 from budgybot import records
-from budgybot.records_models import ConsumedStatement
+from budgybot.records_models import ConsumedStatement, BankEntry
 from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
 from budgybot.statement_models.abc import AbstractStatementEntry
 from budgybot.statement_models.discover import DiscoverCreditEntry
@@ -33,6 +33,24 @@ def find_records(engine: Engine, archive_dir: Path) -> list[Path]:
 
     return [record for record in records_in_archive if record.stem not in
             records_consumed]
+
+
+def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
+    """Checks whether an entry exists in the database. Used to prevent entries being
+    committed to the database multiple times."""
+
+    exists = False
+    fetched = None
+    fetch_statement = select(BankEntry).where(BankEntry.description == entry.description and
+                                              BankEntry.transaction_date == entry.transaction_date and
+                                              BankEntry.amount == entry.amount)
+    if entry.id is None:
+        fetched = records.fetch_one(engine, fetch_statement)
+
+    if fetched is not None:
+        exists = True
+
+    return exists
 
 
 def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatementEntry]]:
@@ -86,7 +104,9 @@ def loop_and_consume(engine, list_o_records: list[Path]) -> None:
     for record in list_o_records:
         record_entries = consume_csv_record(engine, record)
         for i, entry in enumerate(record_entries):
-            record_entries[i] = entry.map_to_bank_entry()
+            new_bankentry = entry.map_to_bank_entry()
+            if not check_entry_exists_in_record(engine, new_bankentry):
+                record_entries[i] = new_bankentry
 
     records.add_multi(engine, sorted(record_entries, key=lambda e:
     e.transaction_date))

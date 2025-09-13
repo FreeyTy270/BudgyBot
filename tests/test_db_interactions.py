@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from budgybot import records
-from budgybot.csv_records import consume_csv_record, find_records
-from tests.conftest import create_db_engine
+from budgybot.csv_records import (
+    consume_csv_record,
+    find_records,
+    loop_and_consume,
+    check_entry_exists_in_record,
+)
 
 
 @pytest.mark.dependency()
@@ -32,6 +36,13 @@ def test_data_not_read_twice(create_db_engine):
     assert len(files_not_read) == 0
 
 
-# @pytest.mark.dependency(depends=["test_get_data_into_db"])
-# def test_data_in_db(create_db_engine):
-#     cwd = Path(__file__).parent
+@pytest.mark.dependency(depends=["test_get_data_into_db"])
+def test_no_repeat_data_in_db(create_db_engine, create_copy_csv_record):
+    incorrect_count = 0
+    record_entries = consume_csv_record(create_db_engine, create_copy_csv_record)
+    for i, entry in enumerate(record_entries):
+        new_bankentry = entry.map_to_bank_entry()
+        if not check_entry_exists_in_record(create_db_engine, new_bankentry):
+            incorrect_count += 1
+
+    assert incorrect_count == 0

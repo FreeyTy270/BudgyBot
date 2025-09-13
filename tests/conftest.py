@@ -1,11 +1,12 @@
+import random
+from shutil import copy
 from pathlib import Path
 
 import pytest
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import SQLModel, create_engine, select
 
 from budgybot import records
-from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
+from budgybot.records_models import ConsumedStatement
 
 
 cwd = Path(__file__).parent
@@ -28,6 +29,21 @@ def create_db_engine(reset_db):
     yield test_engine
 
     test_engine.dispose()
+
+
+@pytest.fixture
+def create_copy_csv_record(create_db_engine):
+    archives = cwd / "archives"
+    saved_data_records = records.fetch(create_db_engine, select(ConsumedStatement.file_name))
+    golden_record = saved_data_records[random.randint(0, len(saved_data_records) - 1)]
+    golden_path = [*archives.glob(f"{golden_record}.csv", case_sensitive=False)][0]
+    test_record = copy(golden_path, archives / f"golden_{golden_record}.csv")
+
+    yield test_record
+
+    test_record.unlink()
+
+
 
 
 def pytest_generate_tests(metafunc):
