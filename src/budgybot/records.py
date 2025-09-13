@@ -3,8 +3,9 @@
 import logging
 from typing import Sequence, TYPE_CHECKING
 
+import sqlalchemy.exc
 from sqlalchemy import Engine, Select
-from sqlmodel import SQLModel, Session
+from sqlmodel import SQLModel, Session, func
 from sqlmodel.sql._expression_select_cls import _T
 
 log = logging.getLogger()
@@ -73,11 +74,19 @@ def fetch_one(engine: Engine, select_stmt: Select, okay_if_none: bool = True) ->
         the fetch to return ``None`` without throwing an exception. Defaults to ``True``.
         :return: The fetched record or ``None``.
     """
+    record = None
 
     with Session(engine) as session:
-        if okay_if_none:
-            record = session.exec(select_stmt).one_or_none()
-        else:
-            record = session.exec(select_stmt).one()
+        try:
+            if okay_if_none:
+                record = session.exec(select_stmt).one_or_none()
+            else:
+                record = session.exec(select_stmt).one()
+        except sqlalchemy.exc.MultipleResultsFound:
+            num_records = len(session.exec(select_stmt).all())
+            log.warning(f"{num_records} records found where 1 was expected")
+        except sqlalchemy.exc.NoResultFound:
+            log.error(f"No records were found where 1 was needed")
+            ## TODO: Create custom exception behavior when necessary
 
     return record

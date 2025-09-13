@@ -38,7 +38,7 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
     @classmethod
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
-        if not isinstance(tx_date, datetime):
+        if not isinstance(tx_date, date):
             tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
         return tx_date
@@ -94,9 +94,9 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
 class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
     """Pydantic model of a single row from a Chase Credit Card Account csv archive."""
 
-    transaction_date: Annotated[datetime, Field(alias="Transaction Date")]
+    transaction_date: Annotated[date, Field(alias="Transaction Date")]
     transaction_type: Annotated[ChaseCreditEntryType, Field(alias="Type")]
-    posting_date: Annotated[datetime, Field(alias="Post Date")]
+    posting_date: Annotated[date, Field(alias="Post Date")]
     description: Annotated[str, Field(alias="Description")]
     category: Annotated[ChaseCreditCategory, Field(alias="Category")]
     amount: Annotated[Decimal, Field(alias="Amount")]
@@ -128,8 +128,8 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
     @classmethod
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
-        if not isinstance(tx_date, datetime):
-            tx_date = datetime.strptime(tx_date, "%m/%d/%Y")
+        if not isinstance(tx_date, date):
+            tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
         return tx_date
 

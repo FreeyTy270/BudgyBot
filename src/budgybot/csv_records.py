@@ -4,7 +4,7 @@ from pathlib import Path
 from builtins import type
 
 from sqlalchemy import Engine
-from sqlmodel import Session, select
+from sqlmodel import Session, select, and_
 
 from pydantic_core._pydantic_core import ValidationError
 
@@ -41,11 +41,16 @@ def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
 
     exists = False
     fetched = None
-    fetch_statement = select(BankEntry).where(BankEntry.description == entry.description and
-                                              BankEntry.transaction_date == entry.transaction_date and
-                                              BankEntry.amount == entry.amount)
+    fetch_statement = select(BankEntry).where(and_(BankEntry.description ==
+                                              entry.description,
+                                              BankEntry.transaction_date ==
+                                                   entry.transaction_date,
+                                              BankEntry.amount == entry.amount))
     if entry.id is None:
         fetched = records.fetch_one(engine, fetch_statement)
+    else:
+        exists = True
+        log.warning(f"Provided BankEntry has db id already: {entry.id}")
 
     if fetched is not None:
         exists = True

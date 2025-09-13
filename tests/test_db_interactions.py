@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,7 @@ from budgybot.csv_records import (
 
 
 @pytest.mark.dependency()
-def test_get_data_into_db(create_db_engine, file):
+def test_get_data_into_db_raw(create_db_engine, file):
 
     the_entries = consume_csv_record(create_db_engine, file)
     for i, entry in enumerate(the_entries):
@@ -28,7 +29,7 @@ def test_get_data_into_db(create_db_engine, file):
     assert the_entries[0].description == entry_copies[0].description
 
 
-@pytest.mark.dependency(depends=["test_get_data_into_db"])
+@pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
 def test_data_not_read_twice(create_db_engine):
     archives = Path(__file__).parent / "archives"
     files_not_read = find_records(create_db_engine, archives)
@@ -36,13 +37,19 @@ def test_data_not_read_twice(create_db_engine):
     assert len(files_not_read) == 0
 
 
-@pytest.mark.dependency(depends=["test_get_data_into_db"])
-def test_no_repeat_data_in_db(create_db_engine, create_copy_csv_record):
+@pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
+def test_no_repeat_data_in_db(caplog, create_db_engine, create_copy_csv_record, file):
+    caplog.set_level(logging.DEBUG)
+    log = logging.getLogger("no-repeats")
+    copy_csv = create_copy_csv_record(file)
     incorrect_count = 0
-    record_entries = consume_csv_record(create_db_engine, create_copy_csv_record)
+    record_entries = consume_csv_record(create_db_engine, copy_csv)
     for i, entry in enumerate(record_entries):
         new_bankentry = entry.map_to_bank_entry()
+        log.debug(f"Checking Entry: {new_bankentry.description}, "
+                  f"{new_bankentry.transaction_date}, {new_bankentry.amount}")
         if not check_entry_exists_in_record(create_db_engine, new_bankentry):
+            log.debug(f"^Entry passed check, incrementing count")
             incorrect_count += 1
 
     assert incorrect_count == 0

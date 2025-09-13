@@ -34,14 +34,17 @@ def create_db_engine(reset_db):
 @pytest.fixture
 def create_copy_csv_record(create_db_engine):
     archives = cwd / "archives"
-    saved_data_records = records.fetch(create_db_engine, select(ConsumedStatement.file_name))
-    golden_record = saved_data_records[random.randint(0, len(saved_data_records) - 1)]
-    golden_path = [*archives.glob(f"{golden_record}.csv", case_sensitive=False)][0]
-    test_record = copy(golden_path, archives / f"golden_{golden_record}.csv")
 
-    yield test_record
+    def _create_copy_csv_record(golden_path):
+        test_record = copy(golden_path, archives / f"golden_{golden_path.stem}.csv")
+        return test_record
 
-    test_record.unlink()
+    yield _create_copy_csv_record
+
+    test_record = [*archives.glob(f"golden_*.csv")][0]
+    if test_record:
+        test_record.unlink()
+
 
 
 
