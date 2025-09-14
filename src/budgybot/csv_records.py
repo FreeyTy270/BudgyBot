@@ -47,7 +47,10 @@ def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
                                                    entry.transaction_date,
                                               BankEntry.amount == entry.amount))
     if entry.id is None:
-        fetched = records.fetch_one(engine, fetch_statement)
+        """This fetch was changed from fetch_one to fetch(all) after discovering an edge case of having multiple 
+        valid transactions sharing a date, description, and amount. Program will allow multiple 'identical' transactions
+        when loaded in from the same file by virtue of all entries within a csv file being added to db at the same time"""
+        fetched = records.fetch(engine, fetch_statement)
     else:
         exists = True
         log.warning(f"Provided BankEntry has db id already: {entry.id}")
@@ -99,7 +102,7 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatemen
 
     return csv_consumed
 
-def loop_and_consume(engine, list_o_records: list[Path]) -> None:
+def loop_and_consume(engine: Engine, list_o_records: list[Path]) -> None:
     """Loops through a list of records (``list_o_records``) and consumes them into
     the db.
     :param engine: SQLAlchemy engine instance

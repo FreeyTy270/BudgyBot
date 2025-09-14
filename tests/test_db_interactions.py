@@ -7,7 +7,6 @@ from budgybot import records
 from budgybot.csv_records import (
     consume_csv_record,
     find_records,
-    loop_and_consume,
     check_entry_exists_in_record,
 )
 
@@ -39,17 +38,15 @@ def test_data_not_read_twice(create_db_engine):
 
 @pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
 def test_no_repeat_data_in_db(caplog, create_db_engine, create_copy_csv_record, file):
-    caplog.set_level(logging.DEBUG)
     log = logging.getLogger("no-repeats")
     copy_csv = create_copy_csv_record(file)
     incorrect_count = 0
     record_entries = consume_csv_record(create_db_engine, copy_csv)
     for i, entry in enumerate(record_entries):
         new_bankentry = entry.map_to_bank_entry()
-        log.debug(f"Checking Entry: {new_bankentry.description}, "
-                  f"{new_bankentry.transaction_date}, {new_bankentry.amount}")
         if not check_entry_exists_in_record(create_db_engine, new_bankentry):
-            log.debug(f"^Entry passed check, incrementing count")
+            log.error(f"Entry Passed Check: {new_bankentry.description}, "
+                      f"{new_bankentry.transaction_date}, {new_bankentry.amount}")
             incorrect_count += 1
 
     assert incorrect_count == 0
