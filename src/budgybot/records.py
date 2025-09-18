@@ -1,11 +1,11 @@
 """This file defines the program interface to the sqlite database"""
 
 import logging
-from typing import Sequence, TYPE_CHECKING
+from typing import Sequence
 
 import sqlalchemy.exc
 from sqlalchemy import Engine, Select
-from sqlmodel import SQLModel, Session, func
+from sqlmodel import SQLModel, Session
 from sqlmodel.sql._expression_select_cls import _T
 
 log = logging.getLogger()
@@ -86,7 +86,7 @@ def fetch_one(engine: Engine, select_stmt: Select, okay_if_none: bool = True) ->
             num_records = len(session.exec(select_stmt).all())
             log.warning(f"{num_records} records found where 1 was expected")
         except sqlalchemy.exc.NoResultFound:
-            log.error(f"No records were found where 1 was needed")
+            log.error("No records were found where 1 was needed")
             ## TODO: Create custom exception behavior when necessary
 
     return record

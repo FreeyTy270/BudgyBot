@@ -1,10 +1,9 @@
 import logging
 from csv import DictReader
 from pathlib import Path
-from builtins import type
 
 from sqlalchemy import Engine
-from sqlmodel import Session, select, and_
+from sqlmodel import select, and_
 
 from pydantic_core._pydantic_core import ValidationError
 
@@ -17,22 +16,19 @@ from budgybot.statement_models.discover import DiscoverCreditEntry
 log = logging.getLogger()
 
 
-def find_records(engine: Engine, archive_dir: Path) -> list[Path]:
+def find_records(archive_dir: Path, previously_consumed: list[str]) -> list[Path]:
     """Uses a glob pattern to find records in ``archive_dir``. Returns a list of
-    file paths that have not already been consumed.
+    file paths that are not in the list of ``previously_consumed`` records.
 
-    :param engine: The SQLAlchemy engine to use to find records.
+    :param previously_consumed: A list of file names that have already been consumed.
     :param archive_dir: The directory to search for records in.
     :return: A list of file paths that have not already been consumed.
     """
 
-    with Session(engine) as session:
-        records_consumed = session.exec(select(ConsumedStatement.file_name)).all()
-
     records_in_archive = archive_dir.glob("*.csv", case_sensitive=False)
 
     return [record for record in records_in_archive if record.stem not in
-            records_consumed]
+            previously_consumed]
 
 
 def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
@@ -65,7 +61,7 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatemen
     """Reads data in from a csv file located at the Path specified by ``file``. Also
     updates the data held in the consumed file db.
 
-    :param engine: SQLAlchemy engine instance
+    :param engine: SQLAlchemy previously_consumed instance
     :param file: Path to the csv file.
     :return: A list of BankEntry objects.
     """
@@ -105,7 +101,7 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatemen
 def loop_and_consume(engine: Engine, list_o_records: list[Path]) -> None:
     """Loops through a list of records (``list_o_records``) and consumes them into
     the db.
-    :param engine: SQLAlchemy engine instance
+    :param engine: SQLAlchemy previously_consumed instance
     :param list_o_records: List of records to consume.
     """
 

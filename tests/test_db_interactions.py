@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import pytest
+from sqlmodel import select
 
 from budgybot import records
 from budgybot.csv_records import (
@@ -9,6 +10,7 @@ from budgybot.csv_records import (
     find_records,
     check_entry_exists_in_record,
 )
+from budgybot.records_models import ConsumedStatement
 
 
 @pytest.mark.dependency()
@@ -31,7 +33,8 @@ def test_get_data_into_db_raw(create_db_engine, file):
 @pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
 def test_data_not_read_twice(create_db_engine):
     archives = Path(__file__).parent / "archives"
-    files_not_read = find_records(create_db_engine, archives)
+    read_records = records.fetch(create_db_engine, select(ConsumedStatement.file_name))
+    files_not_read = find_records(archives, read_records)
 
     assert len(files_not_read) == 0
 
