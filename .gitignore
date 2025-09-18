@@ -1,7 +1,7 @@
 # BudgyBot custom ignores
-bank_exports/**
+bank_exports/
 archives/
-test.db
+**.db
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm
