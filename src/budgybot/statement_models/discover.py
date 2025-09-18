@@ -1,5 +1,5 @@
 """Defines the dataclass models (Pydantic) for Discover banking statements"""
-
+import re
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Annotated
@@ -36,9 +36,9 @@ class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
         if not category:
             category = DiscoverCreditCategory.UNDEFINED
         elif not isinstance(category, DiscoverCreditCategory):
-            if "Payments" in category:
-                category = "payments"
-            category = DiscoverCreditCategory[category.upper()]
+            category = category.replace("&","").replace("/","")
+            category = re.sub(r"\s+", "_", category)
+            category = DiscoverCreditCategory(category.lower())
 
         return category
 

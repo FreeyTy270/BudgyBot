@@ -49,7 +49,7 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
         """Converts string representation of type into CDET enum instance."""
         if not isinstance(transaction_type, ChaseDebitEntryType):
 
-            transaction_type = ChaseDebitEntryType[transaction_type.upper()]
+            transaction_type = ChaseDebitEntryType(transaction_type.lower())
 
         return transaction_type
 
@@ -109,8 +109,8 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
         if not category:
             category = ChaseCreditCategory.UNDEFINED
         elif not isinstance(category, ChaseCreditCategory):
-            modded_str = category.replace(" &","").replace(" ", "_").upper()
-            category = ChaseCreditCategory[modded_str]
+            modded_str = category.replace(" &","").replace(" ", "_").lower()
+            category = ChaseCreditCategory(modded_str)
 
         return category
 
@@ -120,7 +120,7 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
         if not transaction_type:
             transaction_type = ChaseCreditEntryType.UNDEFINED
         elif not isinstance(transaction_type, ChaseCreditEntryType):
-            transaction_type = ChaseCreditEntryType[transaction_type.upper()]
+            transaction_type = ChaseCreditEntryType(transaction_type.lower())
 
         return transaction_type
 
