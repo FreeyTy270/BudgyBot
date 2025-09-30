@@ -19,13 +19,18 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    {include-group = "test"}
+]
+test = [
     "pytest>=8.4.2",
+    "pytest-dependency>=0.6.0",
 ]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-v"
+addopts = "-vv -rf"
 log_cli = true
+log_level = "INFO"
 testpaths = [
     "tests",
     "integration",

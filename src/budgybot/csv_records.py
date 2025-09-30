@@ -27,8 +27,11 @@ def find_records(archive_dir: Path, previously_consumed: list[str]) -> list[Path
 
     records_in_archive = archive_dir.glob("*.csv", case_sensitive=False)
 
-    return [record for record in records_in_archive if record.stem not in
-            previously_consumed]
+    return [
+        record
+        for record in records_in_archive
+        if record.stem not in previously_consumed
+    ]
 
 
 def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
@@ -37,27 +40,32 @@ def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
 
     exists = False
     fetched = None
-    fetch_statement = select(BankEntry).where(and_(BankEntry.description ==
-                                              entry.description,
-                                              BankEntry.transaction_date ==
-                                                   entry.transaction_date,
-                                              BankEntry.amount == entry.amount))
+    fetch_statement = select(BankEntry).where(
+        and_(
+            BankEntry.description == entry.description,
+            BankEntry.transaction_date == entry.transaction_date,
+            BankEntry.amount == entry.amount,
+        )
+    )
     if entry.id is None:
-        """This fetch was changed from fetch_one to fetch(all) after discovering an edge case of having multiple 
+        """This fetch was changed from fetch_one to fetch(all) after discovering an edge case of having multiple
         valid transactions sharing a date, description, and amount. Program will allow multiple 'identical' transactions
-        when loaded in from the same file by virtue of all entries within a csv file being added to db at the same time"""
+        when loaded in from the same file by virtue of all entries within a csv file being added to db at the same time
+        """
         fetched = records.fetch(engine, fetch_statement)
     else:
         exists = True
         log.warning(f"Provided BankEntry has db id already: {entry.id}")
 
-    if fetched is not None:
+    if fetched:
         exists = True
 
     return exists
 
 
-def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatementEntry]]:
+def consume_csv_record(
+    engine: Engine, file: Path
+) -> list[type[AbstractStatementEntry]]:
     """Reads data in from a csv file located at the Path specified by ``file``. Also
     updates the data held in the consumed file db.
 
@@ -90,13 +98,16 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[AbstractStatemen
                 new_entry = entrytype(**row)
                 csv_consumed.append(new_entry)
             except ValidationError as e:
-                log.error(f"Object {entrytype} is not complete or properly formatted\n{e}")
+                log.error(
+                    f"Object {entrytype} is not complete or properly formatted\n{e}"
+                )
                 raise
 
     file_consumed = ConsumedStatement(file_name=file.stem)
     records.add_single(engine, file_consumed)
 
     return csv_consumed
+
 
 def loop_and_consume(engine: Engine, list_o_records: list[Path]) -> None:
     """Loops through a list of records (``list_o_records``) and consumes them into
@@ -112,6 +123,4 @@ def loop_and_consume(engine: Engine, list_o_records: list[Path]) -> None:
             if not check_entry_exists_in_record(engine, new_bankentry):
                 record_entries[i] = new_bankentry
 
-    records.add_multi(engine, sorted(record_entries, key=lambda e:
-    e.transaction_date))
-
+    records.add_multi(engine, sorted(record_entries, key=lambda e: e.transaction_date))

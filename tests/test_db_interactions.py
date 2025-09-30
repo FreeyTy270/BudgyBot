@@ -13,7 +13,7 @@ from budgybot.csv_records import (
 from budgybot.records_models import ConsumedStatement
 
 
-@pytest.mark.dependency()
+@pytest.mark.dependency(name="data_in_db")
 def test_get_data_into_db_raw(create_db_engine, file):
 
     the_entries = consume_csv_record(create_db_engine, file)
@@ -30,7 +30,7 @@ def test_get_data_into_db_raw(create_db_engine, file):
     assert the_entries[0].description == entry_copies[0].description
 
 
-@pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
+@pytest.mark.dependency(depends=["data_in_db"])
 def test_data_not_read_twice(create_db_engine):
     archives = Path(__file__).parent / "archives"
     read_records = records.fetch(create_db_engine, select(ConsumedStatement.file_name))
@@ -39,7 +39,7 @@ def test_data_not_read_twice(create_db_engine):
     assert len(files_not_read) == 0
 
 
-@pytest.mark.dependency(depends=["test_get_data_into_db_raw"])
+@pytest.mark.dependency(depends=["data_in_db"])
 def test_no_repeat_data_in_db(caplog, create_db_engine, create_copy_csv_record, file):
     log = logging.getLogger("no-repeats")
     copy_csv = create_copy_csv_record(file)
@@ -48,8 +48,10 @@ def test_no_repeat_data_in_db(caplog, create_db_engine, create_copy_csv_record, 
     for i, entry in enumerate(record_entries):
         new_bankentry = entry.map_to_bank_entry()
         if not check_entry_exists_in_record(create_db_engine, new_bankentry):
-            log.error(f"Entry Passed Check: {new_bankentry.description}, "
-                      f"{new_bankentry.transaction_date}, {new_bankentry.amount}")
+            log.error(
+                f"Entry Passed Check: {new_bankentry.description}, "
+                f"{new_bankentry.transaction_date}, {new_bankentry.amount}"
+            )
             incorrect_count += 1
 
     assert incorrect_count == 0
