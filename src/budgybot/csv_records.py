@@ -115,12 +115,14 @@ def loop_and_consume(engine: Engine, list_o_records: list[Path]) -> None:
     :param engine: SQLAlchemy previously_consumed instance
     :param list_o_records: List of records to consume.
     """
-
+    normalized_entries = list()
     for record in list_o_records:
         record_entries = consume_csv_record(engine, record)
         for i, entry in enumerate(record_entries):
             new_bankentry = entry.map_to_bank_entry()
             if not check_entry_exists_in_record(engine, new_bankentry):
-                record_entries[i] = new_bankentry
+                normalized_entries.append(new_bankentry)
 
-    records.add_multi(engine, sorted(record_entries, key=lambda e: e.transaction_date))
+    records.add_multi(
+        engine, sorted(normalized_entries, key=lambda e: e.transaction_date)
+    )
