@@ -1,5 +1,6 @@
 import logging
 import calendar
+from pathlib import Path
 
 import pytest
 from sqlmodel import select
@@ -11,7 +12,7 @@ from budgybot import csv_records
 from budgybot.records_analysis import summations as sums
 from budgybot.records_models import BankEntry, ConsumedStatement
 
-from .conftest import cwd
+cwd = Path(__file__).parent
 
 
 @pytest.fixture(scope="module")

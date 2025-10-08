@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing_extensions import Annotated
 
-from pydantic import computed_field
+from pydantic import computed_field, BaseModel
 from sqlmodel import SQLModel, Field
 
 # noinspection PyNestedDecorators
@@ -29,8 +29,11 @@ class BankEntry(SQLModel, table=True):
 
 
 class ConsumedStatement(SQLModel, table=True):
-    id: Annotated[int | None, Field(default=None, primary_key=True)]
-    file_name: Annotated[str, Field(alias="File Name")]
+    file_name: Annotated[str, Field(alias="File Name", primary_key=True)]
+
+
+class BankAccount(SQLModel, table=True):
+    BankName: Annotated[str, Field(alias="Bank Name", primary_key=True)]
 
 
 class MonthlyRecurring(SQLModel, table=True):
@@ -39,3 +42,8 @@ class MonthlyRecurring(SQLModel, table=True):
     amount: Annotated[Decimal, Field(alias="Amount")]
     last_payment_id: Annotated[int, Field(alias="Last Payment",
                                              foreign_key="bankentry.id")]
+
+
+class UserProfile(BaseModel):
+    id: Annotated[int | None, Field(default=None, primary_key=True)]
+    salary: float

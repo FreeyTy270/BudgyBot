@@ -5,5 +5,8 @@
 
 [USER]
 salary=90608.44
+pay_frequency_num=1
+pay_frequency_unit='week'
+
 
 
