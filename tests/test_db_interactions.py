@@ -10,7 +10,7 @@ from budgybot.csv_records import (
     find_records,
     check_entry_exists_in_record,
 )
-from budgybot.records_models import ConsumedStatement
+from budgybot.persistent_models.transactions import ConsumedStatement
 
 
 @pytest.mark.dependency(name="data_in_db")

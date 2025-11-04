@@ -8,10 +8,10 @@ from sqlmodel import select, and_
 from pydantic_core._pydantic_core import ValidationError
 
 from budgybot import records
-from budgybot.records_models import ConsumedStatement, BankEntry
-from budgybot.statement_models import ChaseCheckingEntry, ChaseCreditEntry
-from budgybot.statement_models.abc import AbstractStatementEntry
-from budgybot.statement_models.discover import DiscoverCreditEntry
+from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
+from budgybot.temporary_models import ChaseCheckingEntry, ChaseCreditEntry
+from budgybot.temporary_models.abc import StatementEntry
+from budgybot.temporary_models.discover import DiscoverCreditEntry
 
 log = logging.getLogger()
 
@@ -34,17 +34,17 @@ def find_records(archive_dir: Path, previously_consumed: list[str]) -> list[Path
     ]
 
 
-def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
+def check_entry_exists_in_record(engine: Engine, entry: Transaction) -> bool:
     """Checks whether an entry exists in the database. Used to prevent entries being
     committed to the database multiple times."""
 
     exists = False
     fetched = None
-    fetch_statement = select(BankEntry).where(
+    fetch_statement = select(Transaction).where(
         and_(
-            BankEntry.description == entry.description,
-            BankEntry.transaction_date == entry.transaction_date,
-            BankEntry.amount == entry.amount,
+            Transaction.description == entry.description,
+            Transaction.transaction_date == entry.transaction_date,
+            Transaction.amount == entry.amount,
         )
     )
     if entry.id is None:
@@ -55,7 +55,7 @@ def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
         fetched = records.fetch(engine, fetch_statement)
     else:
         exists = True
-        log.warning(f"Provided BankEntry has db id already: {entry.id}")
+        log.warning(f"Provided Transaction has db id already: {entry.id}")
 
     if fetched:
         exists = True
@@ -63,15 +63,13 @@ def check_entry_exists_in_record(engine: Engine, entry: BankEntry) -> bool:
     return exists
 
 
-def consume_csv_record(
-    engine: Engine, file: Path
-) -> list[type[AbstractStatementEntry]]:
+def consume_csv_record(engine: Engine, file: Path) -> list[type[StatementEntry]]:
     """Reads data in from a csv file located at the Path specified by ``file``. Also
     updates the data held in the consumed file db.
 
     :param engine: SQLAlchemy previously_consumed instance
     :param file: Path to the csv file.
-    :return: A list of BankEntry objects.
+    :return: A list of Transaction objects.
     """
 
     csv_consumed = list()

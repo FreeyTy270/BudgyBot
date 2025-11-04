@@ -1,4 +1,5 @@
 """Defines the dataclass models (Pydantic) for Discover banking statements"""
+
 import re
 from decimal import Decimal
 from datetime import date, datetime
@@ -6,12 +7,12 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
-from budgybot.statement_models.abc import AbstractStatementEntry
-from budgybot.records_models import BankEntry
+from budgybot.temporary_models.abc import StatementEntry
+from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import DiscoverCreditCategory
 
 
-class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
+class DiscoverCreditEntry(BaseModel, StatementEntry):
     """Pydantic model of a single row from a Discover Credit Card Account csv archive."""
 
     transaction_date: Annotated[date, Field(alias="Trans. Date")]
@@ -36,13 +37,13 @@ class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
         if not category:
             category = DiscoverCreditCategory.UNDEFINED
         elif not isinstance(category, DiscoverCreditCategory):
-            category = category.replace("&","").replace("/","")
+            category = category.replace("&", "").replace("/", "")
             category = re.sub(r"\s+", "_", category)
             category = DiscoverCreditCategory(category.lower())
 
         return category
 
-    def map_to_bank_entry(self) -> BankEntry:
+    def map_to_bank_entry(self) -> Transaction:
         """
         Maps the current model's data to a `BankEntry` instance while excluding
         specific fields like `check_num` and `balance`.
@@ -50,7 +51,7 @@ class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
         :raises TypeError: If the dictionary passed to the `BankEntry` constructor
             does not match the expected parameters.
         :return: A new `BankEntry` instance created from the current model's data.
-        :rtype: BankEntry
+        :rtype: Transaction
         """
         just_the_bits = self.model_dump(
             exclude={
@@ -61,4 +62,4 @@ class DiscoverCreditEntry(BaseModel, AbstractStatementEntry):
 
         just_the_bits["transaction_type"] = self.category.value
 
-        return BankEntry(**just_the_bits)
+        return Transaction(**just_the_bits)

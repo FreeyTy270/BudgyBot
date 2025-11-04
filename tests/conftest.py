@@ -6,10 +6,10 @@ import pytest
 from sqlmodel import SQLModel, create_engine, select
 
 from budgybot import records
-from budgybot.records_models import ConsumedStatement
-
+from budgybot.persistent_models.transactions import ConsumedStatement
 
 cwd = Path(__file__).parent
+
 
 @pytest.fixture(scope="session")
 def reset_db():
@@ -44,9 +44,6 @@ def create_copy_csv_record(create_db_engine):
     test_record = [*archives.glob(f"golden_*.csv")][0]
     if test_record:
         test_record.unlink()
-
-
-
 
 
 def pytest_generate_tests(metafunc):

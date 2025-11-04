@@ -5,7 +5,7 @@ from sqlmodel import create_engine, SQLModel, select
 from budgybot.configurator import SysConf, get_config
 from budgybot.csv_records import find_records, loop_and_consume
 from budgybot.records import fetch
-from budgybot.records_models import ConsumedStatement
+from budgybot.persistent_models.transactions import ConsumedStatement
 
 log = logging.getLogger()
 
@@ -17,7 +17,6 @@ def main(conf: SysConf) -> None:
     read_files = fetch(printing_press, select(ConsumedStatement.file_name))
     unread_data = find_records(conf.archive_dir, read_files)
     loop_and_consume(printing_press, unread_data)
-
 
 
 if __name__ == "__main__":

@@ -1,6 +1,12 @@
 from enum import StrEnum, auto
 
 
+class AccountType(StrEnum):
+    CREDIT = auto()
+    CHECKING = auto()
+    SAVINGS = auto()
+
+
 class RecordEntry(StrEnum):
     UNDEFINED = auto()
     PAYCHECK = auto()

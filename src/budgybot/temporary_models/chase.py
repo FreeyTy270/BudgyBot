@@ -7,8 +7,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator, computed_field
 
-from budgybot.statement_models.abc import AbstractStatementEntry
-from budgybot.records_models import BankEntry
+from budgybot.temporary_models.abc import StatementEntry
+from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import (
     ChaseDebitEntryType,
     ChaseCreditEntryType,
@@ -17,7 +17,7 @@ from budgybot.utils.helper_enums import (
 
 
 # noinspection PyNestedDecorators
-class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
+class ChaseCheckingEntry(BaseModel, StatementEntry):
     """Pydantic model of a single row from a Chase Checking Account csv archive."""
 
     details: Annotated[str, Field(alias="Details")]
@@ -74,9 +74,9 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
 
         return check_num
 
-    def map_to_bank_entry(self) -> BankEntry:
+    def map_to_bank_entry(self) -> Transaction:
         """Dumps the model into a dictionary form containing only the fields found in
-        ``BankEntry`` object and then returns a BankEntry instance."""
+        ``Transaction`` object and then returns a Transaction instance."""
 
         just_the_bits = self.model_dump(
             exclude={
@@ -87,11 +87,11 @@ class ChaseCheckingEntry(BaseModel, AbstractStatementEntry):
 
         just_the_bits["transaction_type"] = self.transaction_type.value
 
-        return BankEntry(**just_the_bits)
+        return Transaction(**just_the_bits)
 
 
 # noinspection PyNestedDecorators
-class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
+class ChaseCreditEntry(BaseModel, StatementEntry):
     """Pydantic model of a single row from a Chase Credit Card Account csv archive."""
 
     transaction_date: Annotated[date, Field(alias="Transaction Date")]
@@ -109,7 +109,7 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
         if not category:
             category = ChaseCreditCategory.UNDEFINED
         elif not isinstance(category, ChaseCreditCategory):
-            modded_str = category.replace(" &","").replace(" ", "_").lower()
+            modded_str = category.replace(" &", "").replace(" ", "_").lower()
             category = ChaseCreditCategory(modded_str)
 
         return category
@@ -124,7 +124,7 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
 
         return transaction_type
 
-    @field_validator("transaction_date","posting_date" ,mode="before")
+    @field_validator("transaction_date", "posting_date", mode="before")
     @classmethod
     def date_validator(cls, tx_date):
         """Converts string representation of date into formatted datetime object."""
@@ -133,11 +133,9 @@ class ChaseCreditEntry(BaseModel, AbstractStatementEntry):
 
         return tx_date
 
-    def map_to_bank_entry(self) -> BankEntry:
-        just_the_bits = self.model_dump(
-            exclude={"posting_date", "category", "memo"}
-        )
+    def map_to_bank_entry(self) -> Transaction:
+        just_the_bits = self.model_dump(exclude={"posting_date", "category", "memo"})
 
         just_the_bits["transaction_type"] = self.transaction_type.value
 
-        return BankEntry(**just_the_bits)
+        return Transaction(**just_the_bits)
