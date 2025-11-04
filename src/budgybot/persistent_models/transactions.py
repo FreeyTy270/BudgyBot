@@ -1,11 +1,12 @@
 from datetime import date
 from decimal import Decimal
-from typing_extensions import Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from pydantic import computed_field
 from sqlmodel import SQLModel, Field, Relationship
 
-from budgybot.persistent_models.banks import BankAccount
+if TYPE_CHECKING:
+    from budgybot.persistent_models.banks import BankAccount
 
 
 # noinspection PyNestedDecorators
@@ -34,9 +35,10 @@ class Transaction(SQLModel, table=True):
 
 
 class ConsumedStatement(SQLModel, table=True):
-    file_name: Annotated[str, Field(alias="File Name", primary_key=True)]
+    id: Annotated[int | None, Field(default=None, primary_key=True)]
+    file_name: Annotated[str, Field(alias="File Name")]
     report_date: Annotated[date, Field(alias="Report Date")]
-    bank_account: Annotated[BankAccount, Relationship()]
+    bank_account: Annotated["BankAccount", Relationship()]
 
 
 class MonthlyRecurringTransaction(Transaction, table=True):
