@@ -1,12 +1,11 @@
-import random
 from shutil import copy
 from pathlib import Path
 
 import pytest
-from sqlmodel import SQLModel, create_engine, select
+from sqlmodel import SQLModel, create_engine
 
-from budgybot import records
-from budgybot.persistent_models.transactions import ConsumedStatement
+from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
+
 
 cwd = Path(__file__).parent
 
@@ -41,7 +40,7 @@ def create_copy_csv_record(create_db_engine):
 
     yield _create_copy_csv_record
 
-    test_record = [*archives.glob(f"golden_*.csv")][0]
+    test_record = [*archives.glob("golden_*.csv")][0]
     if test_record:
         test_record.unlink()
 
@@ -50,3 +49,8 @@ def pytest_generate_tests(metafunc):
     if "file" in metafunc.fixturenames:
         archives = cwd / "archives"
         metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))
+
+
+def garbo_func():
+    tx = Transaction
+    cs = ConsumedStatement
