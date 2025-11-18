@@ -1,11 +1,10 @@
+import logging
 from pathlib import Path
 from tomllib import load
 from pydantic import BaseModel, field_validator, ValidationError
 
-from budgybot.__main__ import log
-
 cwd = Path(__file__).parent
-
+log = logging.getLogger("budgybot")
 
 class SysConf(BaseModel):
     archive_dir: Path
@@ -22,6 +21,8 @@ class SysConf(BaseModel):
         elif str_as_path.is_file() and not str_as_path.parent.exists():
             log.info(f'Path {str_as_path.parent} does not exist; Making Directory')
             str_as_path.parent.mkdir(parents=True)
+
+        return str_as_path
 
 
 def get_config():

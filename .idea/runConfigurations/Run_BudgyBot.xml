@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run BudgyBot" type="CompoundRunConfigurationType">
+    <toRun name="budgybot-frontend dev" type="js.build_tools.npm" />
+    <toRun name="budybot-backend" type="UvRunConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

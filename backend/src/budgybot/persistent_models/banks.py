@@ -1,4 +1,4 @@
-from typing import Annotated, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class Bank(SQLModel, table=True):
-    name: Annotated[str, Field(primary_key=True)]
+    name: str = Field(primary_key=True)
     accounts: list["BankAccount"] = Relationship(back_populates="bank")
 
 

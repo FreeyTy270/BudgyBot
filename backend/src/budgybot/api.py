@@ -30,6 +30,6 @@ app.add_middleware(
 @app.get("/")
 @app.get("/api")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Welcome to budgybot!!!!"}
 
 
