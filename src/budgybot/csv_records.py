@@ -1,6 +1,7 @@
 import logging
-from csv import DictReader
 from pathlib import Path
+from datetime import date
+from csv import DictReader
 
 from sqlalchemy import Engine
 from sqlmodel import select, and_
@@ -8,7 +9,7 @@ from sqlmodel import select, and_
 from pydantic_core._pydantic_core import ValidationError
 
 from budgybot import records
-from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
+from budgybot.persistent_models import Transaction, ConsumedStatement
 from budgybot.temporary_models import ChaseCheckingEntry, ChaseCreditEntry
 from budgybot.temporary_models.abc import StatementEntry
 from budgybot.temporary_models.discover import DiscoverCreditEntry
@@ -82,8 +83,8 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[StatementEntry]]
     elif "Discover" in file.stem:
         entrytype = DiscoverCreditEntry
     else:
-        log.error("Bank account archive NOT supported!!")
-        raise TypeError("Bank account archive NOT supported!!")
+        log.warning(f"Bank account archive NOT supported, skipping: {file.name}")
+        return []
 
     with open(file, "r") as f:
         csv_reader = DictReader(f)
@@ -100,8 +101,10 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[StatementEntry]]
                     f"Object {entrytype} is not complete or properly formatted\n{e}"
                 )
                 raise
-
-    file_consumed = ConsumedStatement(file_name=file.stem)
+    file_modified_date = date.fromtimestamp(file.stat().st_mtime)
+    file_consumed = ConsumedStatement(
+        file_name=file.stem, report_date=file_modified_date
+    )
     records.add_single(engine, file_consumed)
 
     return csv_consumed
