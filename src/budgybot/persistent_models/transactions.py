@@ -1,6 +1,7 @@
+from __future__ import annotations
 from datetime import date
 from decimal import Decimal
-from typing import Annotated, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -13,15 +14,14 @@ class Transaction(SQLModel, table=True):
     """Model that gets saved and fetched from the database. Represents a single row
     of a bank csv archive."""
 
-    id: Annotated[int | None, Field(default=None, primary_key=True)]
-    transaction_date: Annotated[date, Field(alias="Transaction Date")]
-    amount: Annotated[Decimal, Field(alias="Amount")]
-    description: Annotated[str, Field(alias="Description")]
-    transaction_type: Annotated[str, Field(alias="Transaction Type")]
+    id: Optional[int] = Field(default=None, primary_key=True)
+    transaction_date: date = Field(alias="Transaction Date")
+    amount: Decimal = Field(alias="Amount")
+    description: str = Field(alias="Description")
+    transaction_type: str = Field(alias="Transaction Type")
 
-    bank_account_name: Optional[Annotated[str, Field(
-        foreign_key="bankaccount.account_name")]]
-    bank_account: Optional[Annotated[str, Relationship(back_populates="transactions")]]
+    bank_account_name: str = Field(foreign_key="bankaccount.account_name")
+    bank_account: BankAccount = Relationship(back_populates="transactions")
 
     # @computed_field
     # @property
@@ -35,11 +35,6 @@ class Transaction(SQLModel, table=True):
 
 
 class ConsumedStatement(SQLModel, table=True):
-    id: Annotated[int | None, Field(default=None, primary_key=True)]
-    file_name: Annotated[str, Field(alias="File Name")]
-    report_date: Annotated[date, Field(alias="Report Date")]
-    bank_account: Annotated["BankAccount", Relationship()]
-
-
-# class MonthlyRecurringTransaction(Transaction, table=True):
-#     day_of_month: Annotated[int, Field(alias="Day Of Month")]
+    id: Optional[int] = Field(default=None, primary_key=True)
+    file_name: str = Field(alias="File Name")
+    report_date: date = Field(alias="Report Date")

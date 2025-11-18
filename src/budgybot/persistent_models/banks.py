@@ -1,6 +1,4 @@
-from __future__ import annotations
 from typing import Annotated, TYPE_CHECKING
-
 
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -12,14 +10,13 @@ if TYPE_CHECKING:
 
 class Bank(SQLModel, table=True):
     name: Annotated[str, Field(primary_key=True)]
-    accounts: Annotated[list[BankAccount], Relationship(back_populates="bank")]
+    accounts: list["BankAccount"] = Relationship(back_populates="bank")
 
 
 class BankAccount(SQLModel, table=True):
-    account_name: Annotated[str, Field(primary_key=True)]
-    bank: Annotated[Bank, Relationship(back_populates="accounts")]
-    account_type: Annotated[AccountType, Field(alias="Account Type", nullable=False)]
-    transactions: Annotated[
-        list["Transaction"], Relationship(back_populates="bank_account")
-    ]
-    estimated_balance: Annotated[float, Field(alias="Estimated Account Balance")]
+    account_name: str = Field(primary_key=True)
+    bank_name: str = Field(foreign_key="bank.name")
+    bank: "Bank" = Relationship(back_populates="accounts")
+    account_type: AccountType = Field(alias="Account Type", nullable=False)
+    transactions: list["Transaction"] = Relationship(back_populates="bank_account")
+    estimated_balance: float = Field(alias="Estimated Account Balance")
