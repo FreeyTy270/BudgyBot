@@ -7,7 +7,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator, computed_field
 
-from budgybot.temporary_models.abc import StatementEntry
 from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import (
     ChaseDebitEntryType,
@@ -17,7 +16,7 @@ from budgybot.utils.helper_enums import (
 
 
 # noinspection PyNestedDecorators
-class ChaseCheckingEntry(BaseModel, StatementEntry):
+class ChaseCheckingEntry(BaseModel):
     """Pydantic model of a single row from a Chase Checking Account csv archive."""
 
     details: Annotated[str, Field(alias="Details")]
@@ -91,7 +90,7 @@ class ChaseCheckingEntry(BaseModel, StatementEntry):
 
 
 # noinspection PyNestedDecorators
-class ChaseCreditEntry(BaseModel, StatementEntry):
+class ChaseCreditEntry(BaseModel):
     """Pydantic model of a single row from a Chase Credit Card Account csv archive."""
 
     transaction_date: Annotated[date, Field(alias="Transaction Date")]

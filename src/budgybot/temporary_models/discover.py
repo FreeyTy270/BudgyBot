@@ -12,7 +12,7 @@ from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import DiscoverCreditCategory
 
 
-class DiscoverCreditEntry(BaseModel, StatementEntry):
+class DiscoverCreditEntry(BaseModel):
     """Pydantic model of a single row from a Discover Credit Card Account csv archive."""
 
     transaction_date: Annotated[date, Field(alias="Trans. Date")]
