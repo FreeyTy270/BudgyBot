@@ -2,11 +2,12 @@
 <project version="4">
   <component name="Black">
     <option name="enabledOnReformat" value="true" />
+    <option name="enabledOnSave" value="true" />
     <option name="executionMode" value="BINARY" />
     <option name="pathToExecutable" value="$USER_HOME$/.local/share/uv/tools/black/bin/black" />
-    <option name="sdkName" value="uv (BudgyBot)" />
+    <option name="sdkName" value="uv 3.13 (BudgyBot)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="uv (BudgyBot)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv 3.13 (BudgyBot)" project-jdk-type="Python SDK" />
   <component name="PyPackaging">
     <option name="earlyReleasesAsUpgrades" value="true" />
   </component>

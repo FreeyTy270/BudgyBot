@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from sqlmodel import SQLModel, create_engine
 
-from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
+from budgybot import persistent_models  # noqa: F401
 
 
 cwd = Path(__file__).parent
@@ -49,8 +49,3 @@ def pytest_generate_tests(metafunc):
     if "file" in metafunc.fixturenames:
         archives = cwd / "archives"
         metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))
-
-
-def garbo_func():
-    tx = Transaction
-    cs = ConsumedStatement

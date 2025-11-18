@@ -28,7 +28,7 @@ test = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-vv -rf"
+addopts = "-vv -rf --log-cli-level=INFO --log-file=pytest.log --log-file-level=DEBUG"
 log_cli = true
 log_level = "INFO"
 testpaths = [
