@@ -14,15 +14,16 @@ class SysConf(BaseModel):
     @field_validator('ledger_dir', 'archive_dir')
     @classmethod
     def validate_conf_paths(cls, conf_path: str) -> Path:
-        str_as_path = Path(conf_path)
-        if str_as_path.is_dir and not str_as_path.exists():
-            log.info(f'Path {str_as_path} does not exist; Making Directory')
-            str_as_path.mkdir(parents=True)
-        elif str_as_path.is_file() and not str_as_path.parent.exists():
-            log.info(f'Path {str_as_path.parent} does not exist; Making Directory')
-            str_as_path.parent.mkdir(parents=True)
+        if str(conf_path).startswith('.'):
+            conf_path = conf_path.resolve()
+        if conf_path.is_dir and not conf_path.exists():
+            log.info(f'Path {conf_path} does not exist; Making Directory')
+            conf_path.mkdir(parents=True)
+        elif conf_path.is_file() and not conf_path.parent.exists():
+            log.info(f'Path {conf_path.parent} does not exist; Making Directory')
+            conf_path.parent.mkdir(parents=True)
 
-        return str_as_path
+        return conf_path
 
 
 def get_config():
