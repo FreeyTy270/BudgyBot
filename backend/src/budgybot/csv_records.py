@@ -76,6 +76,8 @@ def consume_csv_record(engine: Engine, file: Path) -> list[type[StatementEntry]]
     csv_consumed = list()
     entrytype = None
 
+    """TODO: Replace this if chain by passing in the search parameters based on bank 
+    and bankaccount information"""
     if "Chase" in file.stem and "6568" in file.stem:
         entrytype = ChaseCheckingEntry
     elif "Chase" in file.stem and "1050" in file.stem:

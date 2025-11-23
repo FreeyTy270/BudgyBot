@@ -29,6 +29,11 @@ def create_db_engine(reset_db):
 
     test_engine.dispose()
 
+@pytest.fixture(scope="session")
+def establish_banks():
+    """Create banks and bank accounts for use in the tests"""
+    pass
+
 
 @pytest.fixture
 def create_copy_csv_record(create_db_engine):

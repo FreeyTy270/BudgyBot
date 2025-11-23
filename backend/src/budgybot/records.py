@@ -1,13 +1,13 @@
 """This file defines the program interface to the sqlite database"""
 
 import logging
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import sqlalchemy.exc
 from sqlalchemy import Engine, Select
 from sqlmodel import SQLModel, Session
-from sqlmodel.sql._expression_select_cls import _T
 
+_T = TypeVar("_T")
 log = logging.getLogger()
 
 

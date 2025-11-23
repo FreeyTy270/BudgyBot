@@ -10,13 +10,14 @@ from budgybot.records import fetch
 
 from budgybot import persistent_models as pms
 
-log = logging.getLogger("buggybot")
+log = logging.getLogger("budgybot")
 
 
 def main(conf: SysConf) -> bool:
     sql_db = f"sqlite:///{str(conf.ledger_dir / conf.ledger_name)}.db"
     printing_press = create_engine(sql_db)
     SQLModel.metadata.create_all(bind=printing_press)
+    bank_accounts = fetch(printing_press, select(pms.BankAccount))
     read_files = fetch(printing_press, select(pms.ConsumedStatement.file_name))
     unread_data = find_records(conf.archive_dir, read_files)
     loop_and_consume(printing_press, unread_data)
