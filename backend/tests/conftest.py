@@ -2,10 +2,11 @@ from shutil import copy
 from pathlib import Path
 
 import pytest
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, Session, select
 
-from budgybot import persistent_models  # noqa: F401
-
+from budgybot import persistent_models as pms, records
+from budgybot.persistent_models import BankAccount
+from budgybot.utils.helper_enums import AccountType
 
 cwd = Path(__file__).parent
 
@@ -19,7 +20,7 @@ def reset_db():
     return test_db
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", name="db_engine")
 def create_db_engine(reset_db):
     sql_path = f"sqlite:///{str(reset_db)}"
     test_engine = create_engine(sql_path)
@@ -29,14 +30,50 @@ def create_db_engine(reset_db):
 
     test_engine.dispose()
 
-@pytest.fixture(scope="session")
-def establish_banks():
-    """Create banks and bank accounts for use in the tests"""
-    pass
+@pytest.fixture(scope="function", name="tst_session")
+def make_session(db_engine):
+    with Session(db_engine) as session, session.begin():
+        yield session
 
+@pytest.fixture(scope="session")
+def establish_banks(db_engine):
+    """Create banks and bank accounts for use in the tests"""
+    chase_bank = pms.Bank(name="Chase")
+    discover_bank = pms.Bank(name="Discover")
+
+    banks = {"chase": chase_bank, "discover": discover_bank}
+    with Session(db_engine) as session:
+        session.add_all(banks.values())
+        session.commit()
+        session.refresh(chase_bank)
+        session.refresh(discover_bank)
+
+    return banks
+
+accounts = [
+    {"name": "Chase6568", "type": AccountType.CHECKING},
+    {"name": "Chase1050", "type": AccountType.CREDIT},
+    {"name": "Discover", "type": AccountType.CREDIT},
+]
+
+@pytest.fixture(name="bank_account", params=accounts)
+def get_bank_account(tst_session, establish_banks, request):
+    select_stmt = select(BankAccount).where(BankAccount.account_name == request.param[
+        "name"])
+    if (ba := records.fetch_one(tst_session, select_stmt)) is None:
+        ba = pms.BankAccount(
+            account_name = request.param["name"],
+            account_type = request.param["type"],
+            archive_dir = cwd / "archives",
+            bank = establish_banks["chase"] if "Chase" in request.param["name"] else
+            establish_banks["discover"],
+        )
+        tst_session.add(ba)
+    
+    return ba
 
 @pytest.fixture
-def create_copy_csv_record(create_db_engine):
+def create_copy_csv_record():
     archives = cwd / "archives"
 
     def _create_copy_csv_record(golden_path):
@@ -50,7 +87,7 @@ def create_copy_csv_record(create_db_engine):
         test_record.unlink()
 
 
-def pytest_generate_tests(metafunc):
-    if "file" in metafunc.fixturenames:
-        archives = cwd / "archives"
-        metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))
+# def pytest_generate_tests(metafunc):
+#     if "file" in metafunc.fixturenames:
+#         archives = cwd / "archives"
+#         metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))

@@ -8,28 +8,28 @@ from sqlalchemy import Engine
 from sqlmodel import extract
 
 from budgybot import records
-from budgybot import csv_records
 from budgybot.records_analysis import summations as sums
-from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
+from budgybot import persistent_models as pms
 
 cwd = Path(__file__).parent
 
 
 @pytest.fixture(scope="module")
-def add_data(create_db_engine):
-    if len(records.fetch(create_db_engine, select(Transaction.id))) == 0:
+def add_data(create_db_engine, get_bank_account):
+    account = get_bank_account
+    if len(records.fetch(create_db_engine, select(pms.Transaction.id))) == 0:
         read_files = records.fetch(
-            create_db_engine, select(ConsumedStatement.file_name)
+            create_db_engine, select(pms.ConsumedStatement.file_name)
         )
         unread_data = csv_records.find_records(cwd / "archives", read_files)
-        csv_records.loop_and_consume(create_db_engine, unread_data)
+        csv_records.update(create_db_engine, unread_data)
 
 
 def get_monthly_total_raw(engine: Engine, moi: int, yoi: int) -> float:
     select_stmt = (
-        select(Transaction.amount)
-        .filter(extract("year", Transaction.transaction_date) == yoi)
-        .filter(extract("month", Transaction.transaction_date) == moi)
+        select(pms.Transaction.amount)
+        .filter(extract("year", pms.Transaction.transaction_date) == yoi)
+        .filter(extract("month", pms.Transaction.transaction_date) == moi)
     )
     big_sum = records.fetch(engine, select_stmt)
     big_sum = sum(big_sum)
