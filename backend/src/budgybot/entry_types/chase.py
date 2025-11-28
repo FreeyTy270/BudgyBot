@@ -28,6 +28,9 @@ class ChaseCheckingEntry(BaseModel):
     check_num: Annotated[int | None, Field(alias="Check or Slip #", default=None)]
     file_name: str
 
+    def __str__(self):
+        return "Chase Checking Entry"
+
     @computed_field
     @property
     def transaction_date(self) -> date:
@@ -73,7 +76,7 @@ class ChaseCheckingEntry(BaseModel):
 
         return check_num
 
-    def map_to_bank_entry(self) -> Transaction:
+    def map_to_bank_entry(self, bank_account_name: str) -> Transaction:
         """Dumps the model into a dictionary form containing only the fields found in
         ``Transaction`` object and then returns a Transaction instance."""
 
@@ -85,6 +88,7 @@ class ChaseCheckingEntry(BaseModel):
         )
 
         just_the_bits["transaction_type"] = self.transaction_type.value
+        just_the_bits["bank_account_name"] = bank_account_name
 
         return Transaction(**just_the_bits)
 
@@ -101,6 +105,9 @@ class ChaseCreditEntry(BaseModel):
     amount: Annotated[Decimal, Field(alias="Amount")]
     memo: Annotated[str | None, Field(alias="Memo")]
     file_name: str
+
+    def __str__(self):
+        return "Chase Credit Entry"
 
     @field_validator("category", mode="before")
     @classmethod
@@ -132,9 +139,10 @@ class ChaseCreditEntry(BaseModel):
 
         return tx_date
 
-    def map_to_bank_entry(self) -> Transaction:
+    def map_to_bank_entry(self, bank_account_name: str) -> Transaction:
         just_the_bits = self.model_dump(exclude={"posting_date", "category", "memo"})
 
         just_the_bits["transaction_type"] = self.transaction_type.value
+        just_the_bits["bank_account_name"] = bank_account_name
 
         return Transaction(**just_the_bits)

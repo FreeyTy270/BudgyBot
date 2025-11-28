@@ -7,7 +7,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
-from budgybot.temporary_models.abc import StatementEntry
 from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import DiscoverCreditCategory
 
@@ -21,6 +20,9 @@ class DiscoverCreditEntry(BaseModel):
     amount: Annotated[Decimal, Field(alias="Amount")]
     category: Annotated[DiscoverCreditCategory, Field(alias="Category")]
     file_name: str
+
+    def __str__(self):
+        return "Discover Credit Entry"
 
     @field_validator("posting_date", "transaction_date", mode="before")
     @classmethod
@@ -43,7 +45,7 @@ class DiscoverCreditEntry(BaseModel):
 
         return category
 
-    def map_to_bank_entry(self) -> Transaction:
+    def map_to_bank_entry(self, bank_account_name: str) -> Transaction:
         """
         Maps the current model's data to a `BankEntry` instance while excluding
         specific fields like `check_num` and `balance`.
@@ -61,5 +63,6 @@ class DiscoverCreditEntry(BaseModel):
         )
 
         just_the_bits["transaction_type"] = self.category.value
+        just_the_bits["bank_account_name"] = bank_account_name
 
         return Transaction(**just_the_bits)
