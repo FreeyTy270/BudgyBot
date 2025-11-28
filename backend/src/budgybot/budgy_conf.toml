@@ -1,0 +1,12 @@
+[SYSTEM]
+"ledger_name" = 'budgys_journal'
+"ledger_dir" = '.'
+"archive_dir" = '../../archives'
+
+[USER]
+salary = 90608.44
+pay_frequency_num = 1
+pay_frequency_unit = 'week'
+
+
+

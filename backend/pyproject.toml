@@ -1,0 +1,41 @@
+[project]
+name = "budgybot"
+version = "0.1.0"
+description = "A Personal finance and budgeting app consuming Chase exported CSV's"
+authors = [
+    {name = "Ty Freeman",email = "freemanty27@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.121.2",
+    "pydantic (>=2.10.6,<3.0.0)",
+    "sqlalchemy (>=2.0.39,<3.0.0)",
+    "sqlmodel (>=0.0.24,<0.0.25)",
+    "uvicorn>=0.38.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    {include-group = "test"}
+]
+test = [
+    "pytest>=8.4.2",
+    "pytest-dependency>=0.6.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-vv -rf --log-cli-level=INFO --log-file=pytest.log --log-file-level=DEBUG"
+log_cli = true
+log_level = "INFO"
+testpaths = [
+    "tests",
+    "integration",
+]
+
+
