@@ -1,9 +1,12 @@
 import logging
+from typing import Literal
+
 from sqlalchemy import Engine, func
 from sqlmodel import select, extract
 
 from budgybot import records
-from budgybot.persistent_models.transactions import Transaction
+from budgybot.utils.helper_enums import AccountType
+from budgybot.persistent_models import Transaction
 
 log = logging.getLogger()
 
@@ -13,7 +16,7 @@ def calc_totals(
     year_of_interest: int | None = None,
     month_of_interest: int | None = None,
     bank: str | None = None,
-    credit_or_debit: str | None = None,
+    credit_or_debit: Literal["CREDIT", "DEBIT"] | None = None,
 ) -> float:
     select_stmt = select(func.sum(Transaction.amount))
     if year_of_interest is not None:
@@ -26,6 +29,11 @@ def calc_totals(
         )
     if bank is not None:
         select_stmt.filter(bank in Transaction.bank_account)
+    if credit_or_debit is not None:
+        select_stmt.filter(credit_or_debit == Transaction.transaction_type)
+
+    fetched = records.fetch(engine, select_stmt)
+    return fetched
 
 
 def calc_monthly_total(
