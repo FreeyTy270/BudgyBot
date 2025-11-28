@@ -10,7 +10,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="_new_additionalArguments" value="&quot;-vv&quot;" />
+    <option name="_new_additionalArguments" value="&quot;-vv --log-level\u003dDEBUG&quot;" />
     <option name="_new_target" value="&quot;tests.test_db_interactions&quot;" />
     <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     <method v="2" />

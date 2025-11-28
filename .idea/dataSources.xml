@@ -8,5 +8,13 @@
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/backend/budgybot.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="Test Database" uuid="ad2ffe5f-02e1-4a16-90b6-e316c5eded90">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <remarks>Regenerates everytime tests are run</remarks>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/backend/tests/test.db</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
