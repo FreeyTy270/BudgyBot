@@ -37,7 +37,7 @@ def make_session(db_engine):
 
 @pytest.fixture(scope="session")
 def establish_banks(db_engine):
-    """Create banks and bank accounts for use in the tests"""
+    """Create banks for use in the tests"""
     chase_bank = pms.Bank(name="Chase")
     discover_bank = pms.Bank(name="Discover")
 
@@ -56,8 +56,8 @@ accounts = [
     {"name": "Discover", "type": AccountType.CREDIT},
 ]
 
-@pytest.fixture(name="bank_account", params=accounts)
-def get_bank_account(tst_session, establish_banks, request):
+@pytest.fixture(name="each_bank_account", params=accounts)
+def get_each_bank_account(tst_session, establish_banks, request):
     select_stmt = select(BankAccount).where(BankAccount.account_name == request.param[
         "name"])
     if (ba := records.fetch_one(tst_session, select_stmt)) is None:
@@ -70,6 +70,24 @@ def get_bank_account(tst_session, establish_banks, request):
         )
         tst_session.add(ba)
     
+    return ba
+
+@pytest.fixture(name="bank_account")
+def get_bank_account(tst_session, establish_banks):
+    select_stmt = select(BankAccount).where(
+        BankAccount.account_name == accounts[0]["name"]
+    )
+    if (ba := records.fetch_one(tst_session, select_stmt)) is None:
+        ba = pms.BankAccount(
+            account_name=accounts[0]["name"],
+            account_type=accounts[0]["type"],
+            archive_dir=cwd / "archives",
+            bank=establish_banks["chase"]
+            if "Chase" in accounts[0]["name"]
+            else establish_banks["discover"],
+        )
+        tst_session.add(ba)
+
     return ba
 
 @pytest.fixture
