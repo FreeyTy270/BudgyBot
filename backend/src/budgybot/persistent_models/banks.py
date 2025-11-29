@@ -119,7 +119,7 @@ class BankAccount(SQLModel, table=True):
         """
         normalized_entries = list()
         for record in list_o_records:
-            record_entries = self.consume_csv_record(session, record)
+            record_entries = self.consume_csv_record(record)
             for i, entry in enumerate(record_entries):
                 new_bankentry = entry.map_to_bank_entry(self.account_name)
                 if not new_bankentry.already_exists(session):
