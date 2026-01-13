@@ -1,19 +1,26 @@
+import os
 from shutil import copy
 from pathlib import Path
 
 import pytest
+from dotenv import load_dotenv
 from sqlmodel import SQLModel, create_engine, Session, select
 
 from budgybot import persistent_models as pms, records
 from budgybot.persistent_models import BankAccount
 from budgybot.utils.helper_enums import AccountType
 
-cwd = Path(__file__).parent
+
+load_dotenv(verbose=True)
+
+CWD = Path(__file__).parent
+DB_URL = os.getenv("DATABASE_URL")
+DB_NAME = os.getenv("DATABASE_NAME")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def reset_db():
-    test_db = Path(cwd, "test.db")
+    test_db = Path(DB_URL).resolve()
     if test_db.exists():
         test_db.unlink()
 
@@ -23,17 +30,19 @@ def reset_db():
 @pytest.fixture(scope="session", name="db_engine")
 def create_db_engine(reset_db):
     sql_path = f"sqlite:///{str(reset_db)}"
-    test_engine = create_engine(sql_path)
+    test_engine = create_engine(sql_path, connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(test_engine)
 
     yield test_engine
 
     test_engine.dispose()
 
+
 @pytest.fixture(scope="function", name="tst_session")
 def make_session(db_engine):
     with Session(db_engine) as session, session.begin():
         yield session
+
 
 @pytest.fixture(scope="session")
 def establish_banks(db_engine):
@@ -50,49 +59,55 @@ def establish_banks(db_engine):
 
     return banks
 
+
 accounts = [
     {"name": "Chase6568", "type": AccountType.CHECKING},
     {"name": "Chase1050", "type": AccountType.CREDIT},
     {"name": "Discover", "type": AccountType.CREDIT},
 ]
 
+
 @pytest.fixture(name="each_bank_account", params=accounts)
 def get_each_bank_account(tst_session, establish_banks, request):
-    select_stmt = select(BankAccount).where(BankAccount.account_name == request.param[
-        "name"])
+    select_stmt = select(BankAccount).where(BankAccount.name == request.param["name"])
     if (ba := records.fetch_one(tst_session, select_stmt)) is None:
         ba = pms.BankAccount(
-            account_name = request.param["name"],
-            account_type = request.param["type"],
-            archive_dir = cwd / "archives",
-            bank = establish_banks["chase"] if "Chase" in request.param["name"] else
-            establish_banks["discover"],
+            name=request.param["name"],
+            account_type=request.param["type"],
+            archive_dir=CWD / "archives",
+            bank=(
+                establish_banks["chase"]
+                if "Chase" in request.param["name"]
+                else establish_banks["discover"]
+            ),
         )
         tst_session.add(ba)
-    
+
     return ba
+
 
 @pytest.fixture(name="bank_account")
 def get_bank_account(tst_session, establish_banks):
-    select_stmt = select(BankAccount).where(
-        BankAccount.account_name == accounts[0]["name"]
-    )
+    select_stmt = select(BankAccount).where(BankAccount.name == accounts[0]["name"])
     if (ba := records.fetch_one(tst_session, select_stmt)) is None:
         ba = pms.BankAccount(
-            account_name=accounts[0]["name"],
+            name=accounts[0]["name"],
             account_type=accounts[0]["type"],
-            archive_dir=cwd / "archives",
-            bank=establish_banks["chase"]
-            if "Chase" in accounts[0]["name"]
-            else establish_banks["discover"],
+            archive_dir=CWD / "archives",
+            bank=(
+                establish_banks["chase"]
+                if "Chase" in accounts[0]["name"]
+                else establish_banks["discover"]
+            ),
         )
         tst_session.add(ba)
 
     return ba
 
+
 @pytest.fixture
 def create_copy_csv_record():
-    archives = cwd / "archives"
+    archives = CWD / "archives"
 
     def _create_copy_csv_record(golden_path):
         test_record = copy(golden_path, archives / f"golden_{golden_path.stem}.csv")
@@ -107,5 +122,5 @@ def create_copy_csv_record():
 
 # def pytest_generate_tests(metafunc):
 #     if "file" in metafunc.fixturenames:
-#         archives = cwd / "archives"
+#         archives = CWD / "archives"
 #         metafunc.parametrize("file", archives.glob("*.csv", case_sensitive=False))

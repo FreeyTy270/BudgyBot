@@ -13,7 +13,7 @@ def test_get_data_into_db(tst_session, each_bank_account):
     for record in bank_files:
         record_entries = each_bank_account.consume_csv_record(record)
         for i, entry in enumerate(record_entries):
-            new_bankentry = entry.map_to_bank_entry(each_bank_account.account_name)
+            new_bankentry = entry.map_to_bank_entry(each_bank_account.name)
             if not new_bankentry.already_exists(tst_session):
                 normalized_entries.append(new_bankentry)
 
@@ -47,7 +47,7 @@ def test_no_repeat_data_in_db(caplog, tst_session,
     incorrect_count = 0
     record_entries = each_bank_account.consume_csv_record(copy_csv)
     for i, entry in enumerate(record_entries):
-        new_bankentry = entry.map_to_bank_entry(each_bank_account.account_name)
+        new_bankentry = entry.map_to_bank_entry(each_bank_account.name)
         if not new_bankentry.already_exists(tst_session):
             log.error(
                 f"Entry Passed Check: {new_bankentry.description}, "
