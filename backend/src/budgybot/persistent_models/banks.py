@@ -3,36 +3,57 @@ from csv import DictReader
 from datetime import date
 from pathlib import Path
 from functools import cached_property
+from typing import Optional
 
 from sqlalchemy import Column
-from pydantic import computed_field, ValidationError, ConfigDict
+from pydantic import computed_field, ValidationError
 from sqlmodel import SQLModel, Field, Relationship, Session
 
 import budgybot.entry_types as etypes
 from budgybot.utils import PathType, AccountType
 
-from budgybot.persistent_models.transactions import Transaction, ConsumedStatement
-
+from budgybot.persistent_models.transactions import (
+    Transaction,
+    ConsumedStatement,
+    TransactionPublic,
+)
 
 log = logging.getLogger("budgybot")
 
-class Bank(SQLModel, table=True):
+
+class BankBase(SQLModel):
     name: str = Field(primary_key=True, nullable=False, unique=True)
+
+
+class Bank(BankBase, table=True):
     accounts: list["BankAccount"] = Relationship(back_populates="bank")
 
 
-class BankAccount(SQLModel, table=True):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
-    account_name: str = Field(primary_key=True)
-    account_type: AccountType = Field(alias="Account Type", nullable=False)
-    archive_dir: Path = Field(default=Path(__file__).parent.parent / "archive", sa_column=Column(PathType))
+class BankCreate(BankBase):
+    pass
 
-    ### Relationships ###
+
+class BankPublic(BankBase):
+    accounts: list["BankAccountPublic"]
+
+
+class BankAccountBase(SQLModel):
+    # model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str = Field(nullable=False, index=True)
+    account_type: AccountType = Field(alias="Account Type", nullable=False)
+    archive_dir: Path = Field(
+        default=Path(__file__).parent.parent / "archive", sa_column=Column(PathType)
+    )
     bank_name: str = Field(foreign_key="bank.name")
+
+
+class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ### Relationships ###
     bank: Bank = Relationship(back_populates="accounts")
-    statements: list["ConsumedStatement"] = Relationship(back_populates="bank_account")
-    transactions: list["Transaction"] = Relationship(back_populates="bank_account")
+    statements: list[ConsumedStatement] = Relationship(back_populates="bank_account")
+    transactions: list[Transaction] = Relationship(back_populates="bank_account")
 
     @computed_field
     @property
@@ -43,18 +64,23 @@ class BankAccount(SQLModel, table=True):
     @cached_property
     def entry_format(self) -> type[etypes.StatementEntry]:
         """Uses Bank name and Account type to bind a handle to the entry type of this bank account."""
-        if (self.bank.name.lower() == "chase" and self.account_type is
-                AccountType.CHECKING):
+        if (
+            self.bank.name.lower() == "chase"
+            and self.account_type is AccountType.CHECKING
+        ):
             fmt = etypes.ChaseCheckingEntry
-        elif (self.bank.name.lower() == "chase" and self.account_type is
-              AccountType.CREDIT):
+        elif (
+            self.bank.name.lower() == "chase"
+            and self.account_type is AccountType.CREDIT
+        ):
             fmt = etypes.ChaseCreditEntry
-        elif (self.bank.name.lower() == "discover" and self.account_type is
-              AccountType.CREDIT):
+        elif (
+            self.bank.name.lower() == "discover"
+            and self.account_type is AccountType.CREDIT
+        ):
             fmt = etypes.DiscoverCreditEntry
 
         return fmt
-
 
     def find_records(self) -> list[Path]:
         """Uses a glob pattern to find records in ``archive_dir``. Returns a list of
@@ -63,20 +89,17 @@ class BankAccount(SQLModel, table=True):
         :return: A list of file paths that have not already been consumed.
         """
 
-        self_records = self.archive_dir.glob(f"{self.account_name}*.csv",
-                                                   case_sensitive=False)
+        self_records = self.archive_dir.glob(f"{self.name}*.csv", case_sensitive=False)
 
         new_records = [
-        record
-        for record in self_records
-        if record.stem not in [statement.file_name for statement in self.statements]
+            record
+            for record in self_records
+            if record.stem not in [statement.file_name for statement in self.statements]
         ]
 
         return new_records
 
-
-    def consume_csv_record(self, file: Path) -> list[
-        etypes.StatementEntry]:
+    def consume_csv_record(self, file: Path) -> list[etypes.StatementEntry]:
         """Reads data in from a csv file located at the Path specified by ``file``. Also
         updates the data held in the consumed file db.
 
@@ -104,12 +127,13 @@ class BankAccount(SQLModel, table=True):
                     raise
         file_modified_date = date.fromtimestamp(file.stat().st_mtime)
 
-        self.statements.append(ConsumedStatement(
-            file_name=file.stem, report_date=file_modified_date, bank_account=self
-        ))
+        self.statements.append(
+            ConsumedStatement(
+                file_name=file.stem, report_date=file_modified_date, bank_account=self
+            )
+        )
 
         return csv_consumed
-
 
     def update(self, session: Session, list_o_records: list[Path]) -> None:
         """Loops through a list of records (``list_o_records``) and consumes them into
@@ -121,7 +145,30 @@ class BankAccount(SQLModel, table=True):
         for record in list_o_records:
             record_entries = self.consume_csv_record(record)
             for i, entry in enumerate(record_entries):
-                new_bankentry = entry.map_to_bank_entry(self.account_name)
+                new_bankentry = entry.map_to_bank_entry(self.name)
                 if not new_bankentry.already_exists(session):
                     normalized_entries.append(new_bankentry)
-        self.transactions.extend(sorted(normalized_entries, key=lambda e: e.transaction_date))
+        self.transactions.extend(
+            sorted(normalized_entries, key=lambda e: e.transaction_date)
+        )
+
+
+class BankAccountPublic(BankAccountBase):
+    id: int
+    # estimated_balance: float | None = None
+
+
+class BankAccountPublicWithTransactions(BankAccountPublic):
+    transactions: list[TransactionPublic]
+
+
+class BankAccountCreate(BankAccountBase):
+    pass
+
+
+class BankAccountUpdate(SQLModel):
+
+    name: str | None
+    account_type: AccountType | None
+    archive_dir: Path | None
+    bank_name: str | None
