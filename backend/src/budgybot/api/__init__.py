@@ -5,7 +5,6 @@ from budgybot import persistent_models as pms
 from budgybot.records import get_session
 
 router = APIRouter(
-    prefix="/",
     responses={404: {"description": "Not found"}},
 )
 

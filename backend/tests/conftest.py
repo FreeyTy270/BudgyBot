@@ -20,7 +20,7 @@ DB_NAME = os.getenv("DATABASE_NAME")
 
 @pytest.fixture(scope="session", autouse=True)
 def reset_db():
-    test_db = Path(DB_URL).resolve()
+    test_db = Path(DB_URL).resolve() / DB_NAME
     if test_db.exists():
         test_db.unlink()
 
@@ -47,8 +47,15 @@ def make_session(db_engine):
 @pytest.fixture(scope="session")
 def establish_banks(db_engine):
     """Create banks for use in the tests"""
-    chase_bank = pms.Bank(name="Chase")
-    discover_bank = pms.Bank(name="Discover")
+    with Session(db_engine) as session:
+        chase_bank = session.get(pms.Bank, "Chase")
+        discover_bank = session.get(pms.Bank, "Discover")
+
+        if chase_bank is None:
+            chase_bank = pms.Bank(name="Chase")
+
+        if discover_bank is None:
+            discover_bank = pms.Bank(name="Discover")
 
     banks = {"chase": chase_bank, "discover": discover_bank}
     with Session(db_engine) as session:
@@ -61,8 +68,8 @@ def establish_banks(db_engine):
 
 
 accounts = [
-    {"name": "Chase6568", "type": AccountType.CHECKING},
-    {"name": "Chase1050", "type": AccountType.CREDIT},
+    {"name": "Chase Checking", "type": AccountType.CHECKING},
+    {"name": "Chase Credit", "type": AccountType.CREDIT},
     {"name": "Discover", "type": AccountType.CREDIT},
 ]
 
@@ -70,7 +77,8 @@ accounts = [
 @pytest.fixture(name="each_bank_account", params=accounts)
 def get_each_bank_account(tst_session, establish_banks, request):
     select_stmt = select(BankAccount).where(BankAccount.name == request.param["name"])
-    if (ba := records.fetch_one(tst_session, select_stmt)) is None:
+    ret_accts = tst_session.exec(select_stmt)
+    if ret_accts.all() is None:
         ba = pms.BankAccount(
             name=request.param["name"],
             account_type=request.param["type"],

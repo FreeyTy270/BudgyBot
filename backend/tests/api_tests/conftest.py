@@ -10,6 +10,7 @@ from starlette.testclient import TestClient
 
 from budgybot import persistent_models as pms
 from budgybot.api.transactions import router as transactions_router
+from budgybot.api.bankaccount import router as bank_account_router
 from budgybot.records import get_session
 from budgybot.utils import AccountType, ChaseDebitEntryType
 
@@ -25,6 +26,7 @@ def client(db_engine):
 
     app.dependency_overrides[get_session] = override_get_session
     app.include_router(transactions_router)
+    app.include_router(bank_account_router)
     with TestClient(app) as c:
         yield c
 
