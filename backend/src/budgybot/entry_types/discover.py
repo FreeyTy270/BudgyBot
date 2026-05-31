@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field, field_validator
 from budgybot.persistent_models.transactions import Transaction
 from budgybot.utils.helper_enums import DiscoverCreditCategory
 
+ACCT_TYPES = ("credit",)
+
 
 class DiscoverCreditEntry(BaseModel):
     """Pydantic model of a single row from a Discover Credit Card Account csv archive."""

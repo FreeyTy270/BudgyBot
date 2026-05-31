@@ -91,13 +91,12 @@ class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
 
         self_records = self.archive_dir.glob(f"{self.name}*.csv", case_sensitive=False)
 
-        new_records = [
+        return [
             record
             for record in self_records
             if record.stem not in [statement.file_name for statement in self.statements]
         ]
 
-        return new_records
 
     def consume_csv_record(self, file: Path) -> list[etypes.StatementEntry]:
         """Reads data in from a csv file located at the Path specified by ``file``. Also

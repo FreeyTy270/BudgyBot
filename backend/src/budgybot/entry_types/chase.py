@@ -14,6 +14,8 @@ from budgybot.utils.helper_enums import (
     ChaseCreditCategory,
 )
 
+ACCT_TYPES = ("checking", "credit")
+
 
 # noinspection PyNestedDecorators
 class ChaseCheckingEntry(BaseModel):
@@ -39,7 +41,7 @@ class ChaseCheckingEntry(BaseModel):
     @field_validator("posting_date", mode="before")
     @classmethod
     def date_validator(cls, tx_date):
-        """Converts string representation of date into formatted datetime object."""
+        """Converts string representation of date into a formatted datetime object."""
         if not isinstance(tx_date, date):
             tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
@@ -55,30 +57,32 @@ class ChaseCheckingEntry(BaseModel):
 
         return transaction_type
 
-    @field_validator("balance", mode="before")
-    @classmethod
-    def balance_validator(cls, balance):
-        """Converts 'empty' strings into NoneType. This represents a transactions
-        which has not yet been posted."""
-        arbitrary_spaces = re.compile(r"\s+")
-        if re.match(arbitrary_spaces, balance):
-            balance = None
+    # @field_validator("balance", mode="before")
+    # @classmethod
+    # def balance_validator(cls, balance):
+    #     """Converts 'empty' strings into NoneType. This represents transactions
+    #     that have not yet been posted."""
+    #     arbitrary_spaces = re.compile(r"\s+")
+    #     if re.match(arbitrary_spaces, balance):
+    #         balance = None
+    #
+    #     return balance
 
-        return balance
-
-    @field_validator("check_num", mode="before")
+    @field_validator("check_num", "balance", mode="before")
     @classmethod
-    def check_num_validator(cls, check_num):
-        """Converts 'empty' strings into NoneType."""
+    def empty_field_validator(cls, maybe_empty_field):
+        """Converts 'empty' strings into NoneType. For balance fields, this represents
+        transactions that have not yet been posted.
+        """
         arbitrary_spaces = re.compile(r"\s*")
-        if re.match(arbitrary_spaces, check_num):
-            check_num = None
+        if re.match(arbitrary_spaces, maybe_empty_field):
+            maybe_empty_field = None
 
-        return check_num
+        return maybe_empty_field
 
     def map_to_bank_entry(self, bank_account_name: str) -> Transaction:
         """Dumps the model into a dictionary form containing only the fields found in
-        ``Transaction`` object and then returns a Transaction instance."""
+        the ``Transaction`` object and then returns a ``Transaction`` instance."""
 
         just_the_bits = self.model_dump(
             exclude={
@@ -133,7 +137,7 @@ class ChaseCreditEntry(BaseModel):
     @field_validator("transaction_date", "posting_date", mode="before")
     @classmethod
     def date_validator(cls, tx_date):
-        """Converts string representation of date into formatted datetime object."""
+        """Converts string representation of date into a formatted datetime object."""
         if not isinstance(tx_date, date):
             tx_date = datetime.strptime(tx_date, "%m/%d/%Y").date()
 
