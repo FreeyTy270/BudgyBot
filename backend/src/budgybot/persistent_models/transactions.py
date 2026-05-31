@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import SQLModel, Field, Relationship, select, and_, Session
 
-from budgybot import records
-
 if TYPE_CHECKING:
     from budgybot.persistent_models.banks import BankAccount, BankAccountPublic
 
@@ -28,7 +26,7 @@ class TransactionBase(SQLModel):
 
     """Credit for the __add__ and __radd__ implementations goes to this comment https://discuss.python.org/t/how-to-overload-add-method-in-a-self-made-class-to-sum-multiple-objects-of-the-class/40543/4"""
 
-    def __add__(self, other):
+    def __add__(self, other: Transaction | int | float) -> int | float | Decimal:
         if isinstance(other, Transaction):
             return self.amount + other.amount
         elif isinstance(other, int) or isinstance(other, float):
@@ -36,7 +34,7 @@ class TransactionBase(SQLModel):
         else:
             raise TypeError("Unsupported operand type(s) for +")
 
-    def __radd__(self, other):
+    def __radd__(self, other: Transaction | int | float):
         return self.__add__(other)
 
 
@@ -47,6 +45,7 @@ class Transaction(TransactionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     bank_account: BankAccount = Relationship(back_populates="transactions")
 
+    # TODO: Figure out why this is not working
     # @computed_field
     # @property
     # def transaction_id(self) -> int | None:
@@ -62,7 +61,6 @@ class Transaction(TransactionBase, table=True):
         committed to the database multiple times."""
 
         exists = False
-        fetched = None
         fetch_statement = select(Transaction).where(
             and_(
                 Transaction.description == self.description,
@@ -71,13 +69,13 @@ class Transaction(TransactionBase, table=True):
             )
         )
         if self.id is None:
-            """This fetch was changed from fetch_one to fetch(all) after discovering an edge case of having multiple
-            valid transactions sharing a date, description, and amount. Program will allow multiple 'identical' transactions
+            """This fetch was changed from .one() to .all() after discovering an edge
+            case of having multiple valid transactions sharing a date, description,
+            and amount. Program will allow multiple 'identical' transactions
             when loaded in from the same file by virtue of all entries within a csv file being added to db at the same time
             """
-            if records.fetch(session, fetch_statement):
+            if session.exec(fetch_statement).all():
                 exists = True
-
         else:
             exists = True
             log.warning(f"Provided Transaction has db id already: {self.id}")
