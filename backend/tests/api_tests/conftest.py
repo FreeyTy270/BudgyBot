@@ -17,7 +17,7 @@ from budgybot.utils import AccountType, ChaseDebitEntryType
 
 @pytest.fixture(scope="session")
 def client(db_engine):
-    """Create a TestClient with the transactions router and an overridden DB session."""
+    """Create a TestClient with the transaction's router and an overridden DB session."""
     app = FastAPI()
 
     def override_get_session():
