@@ -9,7 +9,7 @@ def test_get_transactions_empty_returns_empty_list(client, db_engine):
     assert response.json() == []
 
 
-def test_get_transactions_all(client, bank_account, transactions):
+def test_get_transactions_all(client, all_txs):
 
     # All
     resp_all = client.get("/transactions/")
@@ -19,7 +19,7 @@ def test_get_transactions_all(client, bank_account, transactions):
     assert len(body_all) >= 5
 
 
-def test_get_all_bank_account_transactions(client, bank_account, transactions):
+def test_get_all_bank_account_transactions(client, all_txs):
     resp_all = client.get(f"/transactions/?ba_id={bank_account.id}")
     assert resp_all.status_code == 200
     body_all = resp_all.json()
@@ -30,7 +30,7 @@ def test_get_all_bank_account_transactions(client, bank_account, transactions):
 
 
 @pytest.mark.parametrize("offset", [0, 3, 6])
-def test_get_transactions_pagination(client, bank_account, transactions, offset):
+def test_get_transactions_pagination(client, all_txs, offset):
     # Limit and offset
     limit = 3
     resp_page = client.get(f"/transactions/?limit={limit}&offset={offset}")
@@ -39,12 +39,12 @@ def test_get_transactions_pagination(client, bank_account, transactions, offset)
     assert len(body_page) == limit
 
     # Verify one of our known descriptions appears somewhere in results
-    assert body_page[1]["description"] == transactions[offset + 1].description
+    assert body_page[1]["description"] == all_txs[offset + 1].description
 
 
-def test_get_single_transaction_success(client, bank_account, transactions):
-    tx_id = randint(1, len(transactions))
-    tx = transactions[tx_id - 1]
+def test_get_single_transaction_success(client, bank_account, all_txs):
+    tx_id = randint(1, len(all_txs))
+    tx = all_txs[tx_id - 1]
 
     # Success
     resp_ok = client.get(f"/transactions/{tx_id}")
@@ -64,8 +64,8 @@ def test_get_single_transaction_404(client):
     assert resp_404.json()["detail"] == "Transaction not found"
 
 
-def test_delete_transaction_success_then_404(client, bank_account, transactions):
-    tx_id = randint(0, len(transactions) - 1)
+def test_delete_transaction_success_then_404(client, all_txs):
+    tx_id = randint(0, len(all_txs) - 1)
     # delete
     resp_del = client.delete(f"/transactions/{tx_id}")
     assert resp_del.status_code == 200

@@ -1,8 +1,7 @@
 import os
 import random
-from datetime import date
-from os import tcsetpgrp
 from pathlib import Path
+from datetime import date
 
 import pytest
 from dotenv import load_dotenv
@@ -16,11 +15,14 @@ from budgybot.utils.helper_enums import AccountType
 load_dotenv(verbose=True)
 
 CWD = Path(__file__).parent
-DB_URL = os.getenv("DATABASE_URL")
-DB_NAME = os.getenv("DATABASE_NAME")
+DB_URL = os.getenv("TDATABASE_URL")
+DB_NAME = os.getenv("TDATABASE_NAME")
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(
+    scope="session",
+    autouse=True,
+)
 def reset_db():
     test_db = Path(DB_URL).resolve() / DB_NAME
     if test_db.exists():
@@ -50,7 +52,7 @@ def seed_test_banks(db_engine) -> list[pms.Bank]:
     return banks
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def seed_test_bank_accounts(db_engine, seed_test_banks):
     chase_accts = list()
     discover_accts = list()
@@ -79,8 +81,8 @@ def seed_test_bank_accounts(db_engine, seed_test_banks):
         session.commit()
 
 
-@pytest.fixture(scope="session")
-def seed_test_transactions(db_engine, seed_test_bank_accounts):
+@pytest.fixture(scope="session", autouse=True)
+def seed_test_transactions(db_engine):
     with Session(db_engine) as session:
         bank_accounts = session.exec(select(pms.BankAccount)).all()
         for bank_account in bank_accounts:

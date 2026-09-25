@@ -51,7 +51,10 @@ class BankAccountBase(SQLModel):
 class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     ### Relationships ###
-    bank: Bank = Relationship(back_populates="accounts")
+    bank: Bank = Relationship(
+        back_populates="accounts",
+        sa_relationship_kwargs={"lazy": "joined"},
+    )
     statements: list[ConsumedStatement] = Relationship(back_populates="bank_account")
     transactions: list[Transaction] = Relationship(back_populates="bank_account")
 
@@ -96,7 +99,6 @@ class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
             for record in self_records
             if record.stem not in [statement.file_name for statement in self.statements]
         ]
-
 
     def consume_csv_record(self, file: Path) -> list[etypes.StatementEntry]:
         """Reads data in from a csv file located at the Path specified by ``file``. Also

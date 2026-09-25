@@ -1,7 +1,8 @@
 from abc import abstractmethod
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, TYPE_CHECKING
 
-from budgybot.persistent_models.transactions import Transaction
+if TYPE_CHECKING:
+    from budgybot.persistent_models.transactions import Transaction
 
 
 @runtime_checkable
@@ -9,4 +10,4 @@ class StatementEntry(Protocol):
     """A protocol for statement entries that can be mapped to a DB Transaction"""
 
     @abstractmethod
-    def map_to_bank_entry(self, bank_account_name: str) -> Transaction: ...
+    def map_to_bank_entry(self, bank_account_name: str) -> "Transaction": ...

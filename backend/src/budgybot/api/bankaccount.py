@@ -7,8 +7,8 @@ from budgybot.records import get_session
 
 
 router = APIRouter(
-    prefix="/bankaccounts",
-    tags=["bankaccounts"],
+    prefix="/bank-accounts",
+    tags=["bank-accounts"],
     responses={404: {"description": "Bank Account Not found"}},
 )
 
