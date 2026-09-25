@@ -19,7 +19,7 @@ def test_get_transactions_all(client, all_txs):
     assert len(body_all) >= 5
 
 
-def test_get_all_bank_account_transactions(client, all_txs):
+def test_get_all_bank_account_transactions(client, bank_account, all_txs):
     resp_all = client.get(f"/transactions/?ba_id={bank_account.id}")
     assert resp_all.status_code == 200
     body_all = resp_all.json()

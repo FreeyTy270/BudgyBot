@@ -9,7 +9,7 @@ from sqlmodel import SQLModel, create_engine, Session, select
 
 from budgybot import entry_types as etypes
 from budgybot import persistent_models as pms
-from budgybot.utils.helper_enums import AccountType
+from budgybot.utils import helper_enums
 
 
 load_dotenv(verbose=True)
@@ -57,13 +57,14 @@ def seed_test_bank_accounts(db_engine, seed_test_banks):
     chase_accts = list()
     discover_accts = list()
     for bank in seed_test_banks:
-        match bank.name:
+        match bank.name.lower():
             case "chase":
                 for acct_type in etypes.CHASE_ACCT_TYPES:
                     chase_accts.append(
                         pms.BankAccount(
                             name=f"chase_{acct_type}",
                             bank=bank,
+                            account_type=acct_type,
                         )
                     )
             case "discover":
@@ -72,6 +73,7 @@ def seed_test_bank_accounts(db_engine, seed_test_banks):
                         pms.BankAccount(
                             name=f"discover_{acct_type}",
                             bank=bank,
+                            account_type=acct_type,
                         )
                     )
 
@@ -86,18 +88,25 @@ def seed_test_transactions(db_engine):
     with Session(db_engine) as session:
         bank_accounts = session.exec(select(pms.BankAccount)).all()
         for bank_account in bank_accounts:
+            match bank_account.entry_format:
+                case etypes.ChaseCheckingEntry:
+                    entry_enum = helper_enums.ChaseDebitEntryType
+                case etypes.ChaseCreditEntry:
+                    entry_enum = helper_enums.ChaseCreditEntryType
+                case etypes.DiscoverCreditEntry:
+                    entry_enum = helper_enums.DiscoverCreditCategory
             txs = list()
             for _ in range(100):
-                tx_type = random.choice(bank_account.entry_format._member_names_)
+                tx_type = random.choice(entry_enum._member_names_)
                 tx = pms.Transaction(
                     transaction_date=date(
                         year=2024,
                         month=random.randint(1, 12),
                         day=random.randint(1, 28),
                     ),
-                    amount=random.randint(-100, 100) + i / 7,
-                    description=f"Test {bank_account} Tx {i}",
-                    transaction_type=bank_account.entry_format[tx_type],
+                    amount=random.randint(-100, 100) + _ / 7,
+                    description=f"Test {bank_account} Tx {_}",
+                    transaction_type=entry_enum[tx_type],
                     notes=None,
                     bank_account=bank_account,
                 )
