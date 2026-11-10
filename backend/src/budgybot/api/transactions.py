@@ -16,14 +16,14 @@ router = APIRouter(
 @router.get("/", response_model=list[pms.TransactionPublic])
 async def read_transactions(
     session: Annotated[Session, Depends(get_session)],
-    bank_account_id: Annotated[int | None, Query(alias="ba_id")] = None,
+    ba_id: int | None = None,
     limit: int = 100,
     offset: int = 0,
 ):
 
-    select_stmt = select(pms.Transaction)
-    if bank_account_id is not None:
-        select_stmt = select_stmt.where(pms.BankAccount.id == bank_account_id)
+    select_stmt = select(pms.Transaction).join(pms.BankAccount)
+    if ba_id is not None:
+        select_stmt = select_stmt.where(pms.BankAccount.id == ba_id)
     select_stmt = select_stmt.offset(offset).limit(limit)
 
     return session.exec(select_stmt).all()

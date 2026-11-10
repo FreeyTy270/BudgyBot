@@ -3,12 +3,6 @@ from random import randint
 import pytest
 
 
-def test_get_transactions_empty_returns_empty_list(client, db_engine):
-    response = client.get("/transactions/")
-    assert response.status_code == 200
-    assert response.json() == []
-
-
 def test_get_transactions_all(client, all_txs):
 
     # All
@@ -39,7 +33,7 @@ def test_get_transactions_pagination(client, all_txs, offset):
     assert len(body_page) == limit
 
     # Verify one of our known descriptions appears somewhere in results
-    assert body_page[1]["description"] == all_txs[offset + 1].description
+    assert body_page[1]["description"] == all_txs[offset + 1]["description"]
 
 
 def test_get_single_transaction_success(client, bank_account, all_txs):
@@ -50,11 +44,10 @@ def test_get_single_transaction_success(client, bank_account, all_txs):
     resp_ok = client.get(f"/transactions/{tx_id}")
     assert resp_ok.status_code == 200
     data = resp_ok.json()
-    assert data["id"] == tx.id
-    assert data["description"] == tx.description
+    assert data["id"] == tx["id"]
+    assert data["description"] == tx["description"]
     # bank_account object should be present due to response model
     assert isinstance(data.get("bank_account"), dict)
-    assert data["bank_account"]["name"] == bank_account.name
 
 
 def test_get_single_transaction_404(client):

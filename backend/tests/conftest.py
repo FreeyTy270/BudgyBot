@@ -9,6 +9,7 @@ from sqlmodel import SQLModel, create_engine, Session, select
 
 from budgybot import entry_types as etypes
 from budgybot import persistent_models as pms
+from budgybot.persistent_models import BankAccount
 from budgybot.utils import helper_enums
 
 
@@ -65,6 +66,7 @@ def seed_test_bank_accounts(db_engine, seed_test_banks):
                             name=f"chase_{acct_type}",
                             bank=bank,
                             account_type=acct_type,
+                            archive_dir=Path(__file__).parent / "archives",
                         )
                     )
             case "discover":
@@ -111,6 +113,7 @@ def seed_test_transactions(db_engine):
                     bank_account=bank_account,
                 )
                 txs.append(tx)
+            txs.sort(key=lambda x: x.transaction_date, reverse=True)
             session.add_all(txs)
             session.commit()
 
@@ -119,3 +122,24 @@ def seed_test_transactions(db_engine):
 def make_session(db_engine):
     with Session(db_engine) as session, session.begin():
         yield session
+
+
+@pytest.fixture(scope="function", name="ba_fetch_all")
+def fetch_bank_accounts(db_engine):
+    with Session(db_engine) as session:
+        bas = session.exec(select(pms.BankAccount)).all()
+    return bas
+
+
+@pytest.fixture(
+    scope="function",
+    name="bank_account",
+    params=["chase_checking", "chase_credit", "discover_credit"],
+)
+def fetch_bank_account(db_engine, request):
+    with Session(db_engine) as session:
+        ba = session.exec(
+            select(pms.BankAccount).where(BankAccount.name == request.param)
+        ).one()
+
+    return ba

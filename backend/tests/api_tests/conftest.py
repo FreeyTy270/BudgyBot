@@ -1,19 +1,12 @@
-import random
-from datetime import date
-from pathlib import Path
-
 import pytest
 from fastapi import FastAPI
-from setuptools._distutils.compilers.C import base
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 from starlette.testclient import TestClient
 
-from budgybot import persistent_models as pms
 from budgybot.api.transactions import router as transactions_router
 from budgybot.api.bankaccount import router as bank_account_router
 from budgybot.records import get_session
-from budgybot.utils import AccountType, ChaseDebitEntryType
 
 
 @pytest.fixture(scope="session")
@@ -32,68 +25,8 @@ def client(db_engine):
         yield c
 
 
-@pytest.fixture(scope="function", name="ba_fetch_all")
-def fetch_bank_accounts(db_engine):
-    with Session(db_engine) as session:
-        bas = session.exec(select(pms.BankAccount)).all()
-    return bas
-
-
-@pytest.fixture(scope="function", name="bank_account")
-def fetch_bank_account(ba_fetch_all):
-    yield ba_fetch_all
-
-
 @pytest.fixture(scope="function", name="all_txs")
-def fetch_transactions(
-    client,
-):
+def fetch_transactions(client):
     response = client.get("/transactions")
     assert response.status_code == 200
     return response.json()
-
-
-# @pytest.fixture(scope="session", name="bank_account")
-# def seed_bank_and_account(db_engine) -> pms.BankAccount:
-#     """Create and persist a Bank and BankAccount for tests."""
-#     with Session(db_engine) as session:
-#         # Create bank if missing
-#         bank = session.get(pms.Bank, "Chase")
-#         if bank is None:
-#             bank = pms.Bank(name="Chase")
-#
-#         ba = pms.BankAccount(
-#             name="ChaseTestAccount",
-#             account_type=AccountType.CHECKING,
-#             archive_dir=Path(__file__).parent / "archives",  # not used by these tests
-#             bank=bank,
-#         )
-#         session.add(ba)
-#         session.commit()
-#         session.refresh(ba)
-#     return ba
-
-
-# @pytest.fixture(scope="session", name="transactions")
-# def seed_transactions(
-#     db_engine, bank_account: pms.BankAccount
-# ) -> list[pms.Transaction]:
-#     txs: list[pms.Transaction] = []
-#     with Session(db_engine) as session:
-#         for i in range(1, 20):
-#             tx_type = random.choices(ChaseDebitEntryType._member_names_)[0]
-#             tx = pms.Transaction(
-#                 transaction_date=date(2024, 1, random.randint(1, 28)),
-#                 amount=random.randint(-100, 100) + i / 7,
-#                 description=f"Test Tx {i}",
-#                 transaction_type=ChaseDebitEntryType[tx_type],
-#                 notes=None,
-#                 bank_account=bank_account,
-#             )
-#             txs.append(tx)
-#         session.add_all(txs)
-#         session.commit()
-#         session.refresh(bank_account)
-#         txs = [tx for tx in txs if tx.id is not None]  ## Access all txs to ensure
-#         # they are not expired
-#     return txs
