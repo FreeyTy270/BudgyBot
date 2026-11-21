@@ -19,6 +19,8 @@ from budgybot.persistent_models.transactions import (
 )
 
 log = logging.getLogger("budgybot")
+# TODO: Add this to configuration somewhere, needs to be passed from the browser
+wd = Path(__file__).parent.parent.parent.parent
 
 
 class BankBase(SQLModel):
@@ -42,9 +44,7 @@ class BankAccountBase(SQLModel):
 
     name: str = Field(nullable=False, index=True)
     account_type: AccountType = Field(alias="Account Type", nullable=False)
-    archive_dir: Path = Field(
-        default=Path(__file__).parent.parent / "archive", sa_column=Column(PathType)
-    )
+    archive_dir: Path = Field(default=wd / "bank_exports", sa_column=Column(PathType))
     bank_name: str = Field(foreign_key="bank.name")
 
 
@@ -85,7 +85,7 @@ class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
 
         return fmt
 
-    def find_records(self) -> list[Path]:
+    def find_records(self, session: Session) -> list[Path]:
         """Uses a glob pattern to find records in ``archive_dir``. Returns a list of
         file paths that are not in the list of ``previously_consumed`` records.
 
@@ -94,6 +94,7 @@ class BankAccount(BankAccountBase, table=True, arbitrary_types_allowed=True):
 
         self_records = self.archive_dir.glob(f"{self.name}*.csv", case_sensitive=False)
 
+        session.add(self)
         return [
             record
             for record in self_records

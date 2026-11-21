@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.dependency(name="data_in_db")
 def test_get_data_into_db(tst_session, bank_account):
 
-    bank_files = bank_account.find_records()
+    bank_files = bank_account.find_records(tst_session)
     normalized_entries = []
     for record in bank_files:
         record_entries = bank_account.consume_csv_record(record)
@@ -27,29 +27,25 @@ def test_get_data_into_db(tst_session, bank_account):
 
 
 @pytest.mark.dependency(depends=["data_in_db"])
-def test_data_not_read_twice(each_bank_account):
-    archives = Path(__file__).parent / "archives"
+def test_data_not_read_twice(tst_session, bank_account):
 
-    files_not_read = each_bank_account.find_records()
+    files_not_read = bank_account.find_records(tst_session)
 
     assert len(files_not_read) == 0
 
 
 @pytest.mark.dependency(depends=["data_in_db"])
 def test_no_repeat_data_in_db(
-    caplog, tst_session, create_copy_csv_record, each_bank_account
+    caplog, tst_session, create_copy_csv_record, bank_account
 ):
     log = logging.getLogger("no-repeats")
-
-    file = (
-        each_bank_account.archive_dir
-        / f"{each_bank_account.statements[0].file_name}.csv"
-    )
+    tst_session.add(bank_account)
+    file = bank_account.archive_dir / f"{bank_account.statements[0].file_name}.csv"
     copy_csv = create_copy_csv_record(file)
     incorrect_count = 0
-    record_entries = each_bank_account.consume_csv_record(copy_csv)
+    record_entries = bank_account.consume_csv_record(copy_csv)
     for i, entry in enumerate(record_entries):
-        new_bankentry = entry.map_to_bank_entry(each_bank_account.name)
+        new_bankentry = entry.map_to_bank_entry(bank_account.name)
         if not new_bankentry.already_exists(tst_session):
             log.error(
                 f"Entry Passed Check: {new_bankentry.description}, "

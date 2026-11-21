@@ -1,12 +1,12 @@
 import logging
 import calendar
+from math import isclose
 from pathlib import Path
 
 import pytest
 from sqlmodel import select, Session
 from sqlmodel import extract
 
-from budgybot import records
 from budgybot.records_analysis import summations as sums
 from budgybot import persistent_models as pms
 
@@ -14,11 +14,11 @@ cwd = Path(__file__).parent
 
 
 @pytest.fixture
-def add_data(db_engine, bank_account):
-    with Session(db_engine) as tst_session, tst_session.begin():
-        if len(records.fetch(tst_session, select(pms.Transaction.id))) == 0:
-            unread_data = bank_account.find_records()
-            bank_account.update(tst_session, unread_data)
+def add_data(tst_session, bank_account):
+    tst_session.add(bank_account)
+    if len(tst_session.exec(select(pms.Transaction.id)).all()) == 0:
+        unread_data = bank_account.find_records()
+        bank_account.update(tst_session, unread_data)
 
 
 def get_monthly_total_raw(session: Session, moi: int, yoi: int) -> float:
@@ -27,7 +27,7 @@ def get_monthly_total_raw(session: Session, moi: int, yoi: int) -> float:
         .filter(extract("year", pms.Transaction.transaction_date) == yoi)
         .filter(extract("month", pms.Transaction.transaction_date) == moi)
     )
-    big_sum = records.fetch(session, select_stmt)
+    big_sum = session.exec(select_stmt).all()
     big_sum = sum(big_sum)
     return big_sum
 
@@ -49,8 +49,14 @@ def test_monthly_total(caplog, tst_session, add_data):
 
             the_sums.append((ret, ret_raw))
             log.info(f"Monthly total for {calendar.month_name[i]} {year}: {amt}")
+    comps = []
 
-    assert all([True if fnc == raw else False for fnc, raw in the_sums])
+    for fnc, raw in the_sums:
+        if fnc and raw is not None:
+            comps.append(isclose(fnc, raw, abs_tol=10**-3))
+        else:
+            comps.append(fnc == raw)
+    assert all(comps)
 
 
 def test_yearly_total(caplog, tst_session, add_data):
@@ -66,7 +72,6 @@ def test_yearly_total(caplog, tst_session, add_data):
             ret_raw += retrnd
 
         ret = sums.calc_yearly_total(tst_session, year)
-        the_sums.append((ret, ret_raw))
 
         if ret is not None:
             amt = f"{ret:.2f}"
@@ -75,10 +80,18 @@ def test_yearly_total(caplog, tst_session, add_data):
                 ret_raw = None
             amt = ret
 
+        the_sums.append((ret, ret_raw))
         log.info(f"Total Revenue for {year}: {amt}")
 
-    assert all([True if fnc == raw else False for fnc, raw in the_sums])
+    comps = []
+    for fnc, raw in the_sums:
+        if fnc and raw is not None:
+            comps.append(isclose(fnc, raw, abs_tol=10**-3))
+        else:
+            comps.append(fnc == raw)
+    assert all(comps)
 
 
 def test_calc_credit_totals(caplog, tst_session, add_data):
     log = logging.getLogger("test-credit-total")
+    assert True

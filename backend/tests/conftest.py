@@ -2,6 +2,7 @@ import os
 import random
 from pathlib import Path
 from datetime import date
+from shutil import copy
 
 import pytest
 from dotenv import load_dotenv
@@ -76,6 +77,7 @@ def seed_test_bank_accounts(db_engine, seed_test_banks):
                             name=f"discover_{acct_type}",
                             bank=bank,
                             account_type=acct_type,
+                            archive_dir=Path(__file__).parent / "archives",
                         )
                     )
 
@@ -143,3 +145,18 @@ def fetch_bank_account(db_engine, request):
         ).one()
 
     return ba
+
+
+@pytest.fixture
+def create_copy_csv_record():
+    archives = CWD / "archives"
+
+    def _create_copy_csv_record(golden_path):
+        test_record = copy(golden_path, archives / f"golden_{golden_path.stem}.csv")
+        return test_record
+
+    yield _create_copy_csv_record
+
+    test_record = [*archives.glob("golden_*.csv")][0]
+    if test_record:
+        test_record.unlink()

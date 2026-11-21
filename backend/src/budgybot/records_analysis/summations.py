@@ -4,7 +4,6 @@ from typing import Literal
 from sqlalchemy import func
 from sqlmodel import select, extract, Session
 
-from budgybot import records
 from budgybot.persistent_models import Transaction
 
 log = logging.getLogger()
@@ -33,7 +32,7 @@ def calc_totals(
     if credit_or_debit is not None:
         select_stmt.filter(credit_or_debit == Transaction.transaction_type)
 
-    fetched = records.fetch(session, select_stmt)
+    fetched = session.exec(select_stmt).one()
     return fetched
 
 
@@ -45,7 +44,7 @@ def calc_monthly_total(
         .filter(extract("year", Transaction.transaction_date) == year_of_interest)
         .filter(extract("month", Transaction.transaction_date) == month_of_interest)
     )
-    big_sum = records.fetch_one(session, select_stmt)
+    big_sum = session.exec(select_stmt).one()
 
     return big_sum
 
@@ -54,7 +53,7 @@ def calc_yearly_total(session: Session, year_of_interest: int) -> float:
     select_stmt = select(func.sum(Transaction.amount)).filter(
         extract("year", Transaction.transaction_date) == year_of_interest
     )
-    big_sum = records.fetch_one(session, select_stmt)
+    big_sum = session.exec(select_stmt).one()
     log.info(f"Raw return from fetch: {big_sum}")
 
     return big_sum
